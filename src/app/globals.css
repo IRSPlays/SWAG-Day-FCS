@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+/* ============================================================
+   SWAG DAY FS — design tokens
+   Event: Teachers' Day '26 · Theme: SUIT UP! SHOW UP! SPORT IT UP!
+   ============================================================ */
+
+@theme {
+  /* palette — engineered to PUNCH THROUGH yellow stage light:
+     cool saturated hues + crisp white on violet-black.
+     No yellows, no creams — they die under amber gels. */
+  --color-court: #08060f;   /* violet-black — the base */
+  --color-panel: #140f2b;   /* raised surface */
+  --color-ice: #f4f7ff;     /* crisp cool white — primary text */
+  --color-volt: #23dcff;    /* electric cyan — championship accent */
+  --color-mag: #ff3da6;     /* hot magenta — live/hot cues */
+  --color-vio: #8f6bff;     /* ultraviolet — secondary voice */
+}
+
+@theme inline {
+  --font-display: var(--font-anton);
+  --font-body: var(--font-grotesk);
+  --font-serifit: var(--font-instrument);
+}
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+  }
+  body {
+    background: var(--color-court);
+    color: var(--color-ice);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background: var(--color-volt);
+    color: var(--color-court);
+  }
+  button {
+    cursor: pointer;
+  }
+}
+
+/* ---------------- broadcast textures ---------------- */
+
+/* film grain */
+@utility bg-noise {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* running-track lane lines */
+@utility bg-lanes {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 134px,
+    color-mix(in srgb, var(--color-ice) 8%, transparent) 134px,
+    color-mix(in srgb, var(--color-ice) 8%, transparent) 136px
+  );
+}
+
+/* scoreboard dot matrix */
+@utility bg-dots {
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--color-ice) 14%, transparent) 1.2px,
+    transparent 1.4px
+  );
+  background-size: 9px 9px;
+}
+
+/* ticket barcode */
+@utility barcode {
+  background-image: repeating-linear-gradient(
+    90deg,
+    currentColor 0 3px,
+    transparent 3px 5px,
+    currentColor 5px 9px,
+    transparent 9px 11px,
+    currentColor 11px 12px,
+    transparent 12px 17px
+  );
+}
+
+/* projector-friendly edge falloff */
+@utility vignette {
+  background: radial-gradient(130% 130% at 50% 42%, transparent 55%, rgba(6, 3, 16, 0.66) 100%);
+}
+
+/* outlined display numerals */
+@utility text-outline-ice {
+  -webkit-text-stroke: 3px color-mix(in srgb, var(--color-ice) 38%, transparent);
+}

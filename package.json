@@ -1,0 +1,26 @@
+{
+  "name": "swag-day-fs",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SWAG Day FS - full-stack stage production system for school events. Theme: Suit up! Show up! Sport it up! - Teachers' Day '26.",
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "motion": "^12.23.0",
+    "next": "^16.0.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.11",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "tailwindcss": "^4.1.11",
+    "typescript": "^5.9.2"
+  }
+}
