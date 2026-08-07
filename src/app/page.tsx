@@ -1,13 +1,13 @@
 import Link from "next/link";
 
 const routes = [
-  { href: "/preview", name: "PREVIEW", desc: "Reference deck · motion sandbox", status: "LIVE NOW", live: true },
-  { href: "/stage", name: "STAGE", desc: "Projector / LED wall output", status: "BUILD 03", live: false },
-  { href: "/controller", name: "CONTROLLER", desc: "Deck pilot + audio mixer", status: "BUILD 04–05", live: false },
-  { href: "/editor", name: "EDITOR", desc: "Quick-edit slides, live", status: "BUILD 06", live: false },
-  { href: "/audience", name: "AUDIENCE", desc: "Phones: reactions · votes · survey", status: "BUILD 07", live: false },
-  { href: "/camera", name: "CAMERA", desc: "Phone → stage video link", status: "BUILD 08", live: false },
-  { href: "/report", name: "REPORT", desc: "Post-event analytics", status: "BUILD 09", live: false },
+  { href: "/preview", name: "PREVIEW", desc: "Reference deck · motion sandbox", status: "LIVE", live: true },
+  { href: "/stage", name: "STAGE", desc: "Projector / LED wall output", status: "LIVE", live: true },
+  { href: "/controller", name: "CONTROLLER", desc: "Deck pilot + audio mixer", status: "LIVE", live: true },
+  { href: "/editor", name: "EDITOR", desc: "Quick-edit slides, live", status: "LIVE", live: true },
+  { href: "/audience", name: "AUDIENCE", desc: "Phones: reactions · votes · survey", status: "LIVE", live: true },
+  { href: "/camera", name: "CAMERA", desc: "Phone → stage video link", status: "LIVE", live: true },
+  { href: "/report", name: "REPORT", desc: "Post-event analytics", status: "LIVE", live: true },
 ];
 
 export default function Home() {
