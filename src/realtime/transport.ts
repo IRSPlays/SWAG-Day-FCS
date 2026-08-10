@@ -19,7 +19,9 @@ let instance: Transport | null = null;
 export function getTransport(): Transport {
   if (instance) return instance;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const key =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   instance = url && key ? supabaseTransport(url, key) : localTransport();
   return instance;
 }
@@ -51,14 +53,28 @@ function supabaseTransport(url: string, key: string): Transport {
     config: { broadcast: { self: false } },
   });
   const handlers = new Set<(ev: ShowEvent) => void>();
+  const queue: ShowEvent[] = [];
+  let ready = false;
   channel.on("broadcast", { event: "show" }, (msg) => {
     const ev = msg.payload as ShowEvent;
     handlers.forEach((h) => h(ev));
   });
-  void channel.subscribe();
+  channel.subscribe((status) => {
+    if (status === "SUBSCRIBED") {
+      ready = true;
+      const pending = queue.splice(0);
+      pending.forEach((ev) =>
+        void channel.send({ type: "broadcast", event: "show", payload: ev })
+      );
+    }
+  });
   return {
     kind: "supabase",
     publish: (ev) => {
+      if (!ready) {
+        queue.push(ev);
+        return;
+      }
       void channel.send({ type: "broadcast", event: "show", payload: ev });
     },
     subscribe: (cb) => {
