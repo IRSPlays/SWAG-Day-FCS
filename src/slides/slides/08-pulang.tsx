@@ -7,7 +7,7 @@
     words go in `emph`; sections drive the mograph treatment automatically. */
 
 import SlideShell from "@/layouts/SlideShell";
-import LyricTimeline from "@/components/LyricTimeline";
+import AmLyricsStage from "@/components/AmLyricsStage";
 import { useSlideContent } from "@/store/show";
 import type { LyricCue } from "../lyrics";
 import type { SlideMeta } from "../types";
@@ -55,7 +55,7 @@ export default function PulangPerformance() {
   const header = useSlideContent(meta.id, content);
   return (
     <SlideShell>
-      <LyricTimeline cues={cues} header={header} bpm={82} accent="vio" />
+      <AmLyricsStage cues={cues} header={header} bpm={82} accent="vio" cover="/cover-pulang.svg" />
     </SlideShell>
   );
 }
