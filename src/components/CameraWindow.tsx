@@ -148,27 +148,28 @@ export default function CameraWindow() {
     });
   }, [activeCam, cams]);
 
-  const waiting = cameraOn && !!activeCam && !cams[activeCam]?.live;
+  const on = cameraOn && !!activeCam && !!cams[activeCam];
+  const waiting = on && !cams[activeCam!]?.live;
 
+  /* ONE stable wrapper, always mounted — the per-camera <video> elements are
+     appended imperatively into the arena, so the DOM must never be swapped.
+     when no camera is cut to stage the wrapper is display:none; the hub keeps
+     answering phones and their frames keep flowing (desktop Chrome keeps
+     WebRTC tracks alive while hidden), so cutting in is still instant.
+     no dimmed "standby" box — the window simply isn't there. */
   return (
     <div
-      className={`absolute right-8 top-8 z-40 w-[430px] border-4 bg-court shadow-[0_20px_60px_rgba(0,0,0,0.7)] transition-all ${
-        cameraOn && activeCam ? "border-mag" : "border-ice/20 pointer-events-none opacity-40"
-      }`}
+      className={`absolute right-8 top-8 z-40 w-[430px] border-4 border-mag bg-court shadow-[0_20px_60px_rgba(0,0,0,0.7)] ${on ? "" : "hidden"}`}
     >
-      <div className={`flex items-center justify-between px-4 py-2 ${cameraOn && activeCam ? "bg-mag" : "bg-ice/20"}`}>
-        <span
-          className={`flex items-center gap-2 font-body text-[14px] font-bold tracking-[0.3em] ${
-            cameraOn && activeCam ? "text-ice" : "text-ice/60"
-          }`}
-        >
+      <div className="flex items-center justify-between bg-mag px-4 py-2">
+        <span className="flex items-center gap-2 font-body text-[14px] font-bold tracking-[0.3em] text-ice">
           <span
             className={`h-2.5 w-2.5 rounded-full ${waiting ? "bg-ice/50" : "animate-pulse bg-ice"}`}
           />
           STAGE CAM{activeCam && cams[activeCam] ? ` · ${cams[activeCam].name}` : ""}
         </span>
         <span className="font-body text-[13px] font-bold tracking-[0.25em] text-ice/85">
-          {res || (waiting ? "CONNECTING" : activeCam ? "LIVE" : "STANDBY")}
+          {waiting ? "CONNECTING" : res || "LIVE"}
         </span>
       </div>
       <div ref={arenaRef} className="relative aspect-video w-full overflow-hidden bg-black" />

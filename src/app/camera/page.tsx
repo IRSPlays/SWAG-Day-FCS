@@ -66,11 +66,13 @@ export default function CameraPage() {
   };
 
   /* draw the live camera into the canvas with zoom + pan applied. the canvas
-     IS the streamed frame, so pinch/drag shows up verbatim on the stage. */
+     IS the streamed frame, so pinch/drag shows up verbatim on the stage.
+     the source is COVER-FIT (aspect preserved, overflow cropped) so the
+     output is always a clean 16:9 frame, never stretched or square. */
   const drawLoop = () => {
     const canvas = canvasRef.current;
     const video = srcVideoRef.current;
-    if (canvas && video && video.videoWidth > 0) {
+    if (canvas && video && video.videoWidth > 0 && video.videoHeight > 0) {
       const ctx = canvas.getContext("2d");
       if (ctx) {
         const W = canvas.width;
@@ -78,9 +80,11 @@ export default function CameraPage() {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, W, H);
+        /* cover: scale so the frame FILLS the canvas, crop the overflow */
         const z = zoomRef.current;
-        const dw = W * z;
-        const dh = H * z;
+        const scale = Math.max(W / video.videoWidth, H / video.videoHeight) * z;
+        const dw = video.videoWidth * scale;
+        const dh = video.videoHeight * scale;
         const ox = (W - dw) / 2 + (panRef.current.x * (W - dw)) / 2;
         const oy = (H - dh) / 2 + (panRef.current.y * (H - dh)) / 2;
         ctx.drawImage(video, ox, oy, dw, dh);
@@ -123,19 +127,31 @@ export default function CameraPage() {
       throw new Error("no preview");
     }
     v.srcObject = src;
+    /* wait for a REAL decoded frame — not just metadata. if the element still
+       holds the previous stream (flip), readyState is already >=2 and metadata
+       never fires again, which previously resized the canvas from stale data. */
     await new Promise<void>((resolve) => {
-      if (v.videoWidth > 0) resolve();
-      else v.onloadedmetadata = () => resolve();
+      const rvfc = (v as HTMLVideoElement & {
+        requestVideoFrameCallback?: (cb: () => void) => number;
+      }).requestVideoFrameCallback;
+      if (typeof rvfc === "function") {
+        rvfc.call(v, () => resolve());
+      } else if (v.readyState >= 2 && v.videoWidth > 0) {
+        resolve();
+      } else {
+        v.onloadeddata = () => resolve();
+        setTimeout(resolve, 1500); /* belt & braces */
+      }
     });
-    /* resize the canvas to the camera's ACTUAL resolution */
-    const caps = src.getVideoTracks()[0]?.getSettings();
-    const cw = (caps?.width && caps.width < q.w ? caps.width : q.w) || q.w;
-    const ch = (caps?.height && caps.height < q.h ? caps.height : q.h) || q.h;
+    /* the canvas is ALWAYS the tier's exact 16:9 size — the draw loop cover-
+       fits whatever the camera delivers, so odd camera aspects (4:3, portrait)
+       can never distort or square the streamed frame. */
     if (canvasRef.current) {
-      canvasRef.current.width = cw;
-      canvasRef.current.height = ch;
+      canvasRef.current.width = q.w;
+      canvasRef.current.height = q.h;
     }
-    setResBadge(`${cw}×${ch}${caps?.frameRate ? ` @ ${Math.round(caps.frameRate)}fps` : ""}`);
+    const caps = src.getVideoTracks()[0]?.getSettings();
+    setResBadge(`${caps?.width ?? q.w}×${caps?.height ?? q.h}${caps?.frameRate ? ` @ ${Math.round(caps.frameRate)}fps` : ""}`);
   };
 
   const goLive = async (pick: QualityId = quality) => {
@@ -341,7 +357,15 @@ export default function CameraPage() {
         onTouchEnd={onTouchEnd}
         onDoubleClickCapture={onDoubleTap}
       >
-        <video ref={srcVideoRef} autoPlay playsInline muted className="hidden" />
+        {/* NOT display:none — hidden videos stop decoding frames on iOS Safari,
+            which kills the canvas capture. kept at 2px, ~invisible instead. */}
+        <video
+          ref={srcVideoRef}
+          autoPlay
+          playsInline
+          muted
+          className="pointer-events-none absolute left-0 top-0 h-[2px] w-[2px] opacity-[0.02]"
+        />
         <canvas ref={canvasRef} className="h-full w-full object-contain" />
         {zoom > 1 && (
           <div className="absolute right-2 top-2 border border-volt bg-black/70 px-2 py-1 font-body text-[11px] font-bold tracking-[0.2em] text-volt">
