@@ -27,6 +27,18 @@ export interface CamInfo {
   live: boolean;
 }
 
+/** live snapshot of whichever lyric slide is on stage (driven by /lyrics) */
+export interface LyricUI {
+  slideId: string;
+  song?: string;
+  artist?: string;
+  manual: boolean;
+  playing: boolean;
+  line: number;
+  lines: string[];
+  section?: string;
+}
+
 interface ShowState {
   ready: boolean;
   transportKind: "local" | "supabase";
@@ -41,6 +53,8 @@ interface ShowState {
   /* multi-camera roster + the controller's current broadcast pick */
   cams: Record<string, CamInfo>;
   activeCam: string | null;
+  /* live lyric-slide snapshot for the /lyrics operator console */
+  lyric: LyricUI | null;
   votes: Record<string, number>;
   reactionCounts: Record<string, number>;
   reactions: Reaction[];
@@ -172,6 +186,25 @@ export const useShow = create<ShowState>((set, get) => {
       case "cam-active":
         set({ activeCam: ev.camId });
         break;
+      case "lyric-state":
+        set({
+          lyric: ev.slideId
+            ? {
+                slideId: ev.slideId,
+                song: ev.song,
+                artist: ev.artist,
+                manual: ev.manual,
+                playing: ev.playing,
+                line: ev.line,
+                lines: ev.lines,
+                section: ev.section,
+              }
+            : null,
+        });
+        break;
+      case "lyric-cmd":
+        /* the lyric slide handles this itself via the transport */
+        break;
       default:
         break;
     }
@@ -206,6 +239,7 @@ export const useShow = create<ShowState>((set, get) => {
     timerEndsAt: null,
     cams: {},
     activeCam: null,
+    lyric: null,
     votes: {},
     reactionCounts: {},
     reactions: [],

@@ -7,7 +7,7 @@
     Keys on the stage machine: P play/pause, ↓/↑ jump to next/prev line, R restart. */
 
 import SlideShell from "@/layouts/SlideShell";
-import AmLyricsStage from "@/components/AmLyricsStage";
+import LyricsMograph from "@/components/LyricsMograph";
 import { useSlideContent } from "@/store/show";
 import type { SlideMeta } from "../types";
 
@@ -46,7 +46,7 @@ export default function PulangPerformance() {
   const header = useSlideContent(meta.id, content);
   return (
     <SlideShell>
-      <AmLyricsStage
+      <LyricsMograph
         cues={[]}
         header={header}
         bpm={82}
@@ -55,6 +55,7 @@ export default function PulangPerformance() {
         ttmlUrl="/lyrics/pulang.ttml"
         audio="/audio/pulang.flac"
         sections={sections}
+        slideId={meta.id}
       />
     </SlideShell>
   );

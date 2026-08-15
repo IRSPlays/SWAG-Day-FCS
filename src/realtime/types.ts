@@ -51,7 +51,29 @@ export type ShowEvent =
   /* the controller selects which phone is cut to the stage screen */
   | (Base & { type: "cam-active"; camId: string | null })
   /* stage flagging that a camera's video is actually flowing */
-  | (Base & { type: "cam-status"; camId: string; live: boolean });
+  | (Base & { type: "cam-status"; camId: string; live: boolean })
+  /* LYRIC CONSOLE — the /lyrics operator page drives the lyric slide on the
+     stage machine (manual tap-along, play/pause, jump to line). */
+  | (Base & {
+      type: "lyric-cmd";
+      slideId: string;
+      action: "play" | "pause" | "next" | "prev" | "restart" | "goto";
+      line?: number;
+    })
+  /* the lyric slide on stage broadcasts its status so the operator console
+     always shows the live song, current line and play state. lines = text
+     only (small payload). slideId:"" = the lyric slide left the stage. */
+  | (Base & {
+      type: "lyric-state";
+      slideId: string;
+      song?: string;
+      artist?: string;
+      manual: boolean;
+      playing: boolean;
+      line: number;
+      lines: string[];
+      section?: string;
+    });
 
 export const newEventId = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto

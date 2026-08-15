@@ -93,3 +93,24 @@
 @utility text-outline-ice {
   -webkit-text-stroke: 3px color-mix(in srgb, var(--color-ice) 38%, transparent);
 }
+
+/* ---- LyricsMograph word sweep ----
+   each word of the active line starts dim and "lights up" as it is sung.
+   the lit state is toggled directly from the rAF loop (no re-renders). */
+.lw {
+  color: color-mix(in srgb, var(--color-ice) 26%, transparent);
+  transition:
+    color 0.32s ease,
+    text-shadow 0.32s ease,
+    opacity 0.32s ease;
+}
+.lw.on {
+  color: var(--color-ice);
+  text-shadow:
+    0 0 26px var(--lw-glow, rgba(143, 107, 255, 0.55)),
+    0 0 72px var(--lw-glow, rgba(143, 107, 255, 0.3));
+}
+.lw.accent-on.on {
+  color: var(--lw-accent, #8f6bff);
+}
+
