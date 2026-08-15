@@ -186,6 +186,27 @@ export default function CameraPage() {
           send({ type: "cam-ice", from: "phone", camId: camIdRef.current, candidate: e.candidate.toJSON() });
       };
 
+      /* LATENCY TUNING (sender): tell the encoder this is live motion and pin
+         a bitrate FLOOR — without one the encoder collapses under Wi-Fi load
+         and the stream turns to molasses. */
+      try { cTrack.contentHint = "motion"; } catch { /* older browsers */ }
+      const sender = pc.getSenders().find((s) => s.track?.kind === "video");
+      if (sender) {
+        try {
+          const p = sender.getParameters();
+          if (!p.encodings?.length) p.encodings = [{}];
+          /* minBitrate is in the spec but missing from TS's DOM lib — cast */
+          const enc = p.encodings[0] as RTCRtpEncodingParameters & { minBitrate?: number };
+          enc.maxBitrate = q.mbps * 1_000_000;
+          enc.minBitrate = Math.round(q.mbps * 600_000);
+          enc.networkPriority = "high";
+          p.degradationPreference = "maintain-framerate";
+          void sender.setParameters(p);
+        } catch {
+          /* param tuning unsupported - sendEncodings already set the budget */
+        }
+      }
+
       unsubRef.current = t.subscribe(async (ev) => {
         if (ev.type === "cam-request") {
           /* already up? ignore the heartbeat - stops the renegotiation churn */

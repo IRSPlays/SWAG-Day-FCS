@@ -29,6 +29,41 @@ export default function CameraWindow() {
   const arenaRef = useRef<HTMLDivElement>(null);
   const peersRef = useRef<Map<string, CamPeer>>(new Map());
   const [res, setRes] = useState("");
+  const [stats, setStats] = useState("");
+
+  /* live network diagnostics for the camera on stage — RTT, bitrate, fps,
+     jitter, packet loss. Shows exactly WHERE lag comes from:
+     high RTT/jitter/loss = Wi-Fi problem · low fps+bitrate = phone encoder
+     struggling · all green but delayed = (shouldn't happen now) buffering. */
+  useEffect(() => {
+    if (!activeCam) { setStats(""); return; }
+    let lastBytes = 0;
+    let lastTs = 0;
+    const iv = setInterval(() => {
+      const p = peersRef.current.get(activeCam);
+      if (!p?.pc) { setStats(""); return; }
+      void p.pc.getStats().then((s) => {
+        let rtt = 0, jitter = 0, fps = 0, loss = 0, mbps = 0;
+        s.forEach((r) => {
+          const rep = r as unknown as Record<string, unknown>;
+          if (rep.type === "candidate-pair" && rep.nominated && typeof rep.currentRoundTripTime === "number")
+            rtt = Math.round(rep.currentRoundTripTime * 1000);
+          if (rep.type === "inbound-rtp" && rep.kind === "video") {
+            if (typeof rep.jitter === "number") jitter = Math.round(rep.jitter * 1000);
+            if (typeof rep.framesPerSecond === "number") fps = Math.round(rep.framesPerSecond);
+            if (typeof rep.packetsLost === "number") loss = rep.packetsLost;
+            const b = typeof rep.bytesReceived === "number" ? rep.bytesReceived : 0;
+            const t = typeof rep.timestamp === "number" ? rep.timestamp : 0;
+            if (lastTs && t > lastTs) mbps = +(((b - lastBytes) * 8) / ((t - lastTs) * 1000)).toFixed(1);
+            lastBytes = b;
+            lastTs = t;
+          }
+        });
+        setStats(`${rtt}ms · ${mbps} Mb/s · ${fps}fps · jit ${jitter}ms${loss > 0 ? ` · lost ${loss}` : ""}`);
+      });
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [activeCam, cams]);
 
   useEffect(() => {
     const t = getTransport();
@@ -52,6 +87,15 @@ export default function CameraWindow() {
       arenaRef.current?.appendChild(video);
 
       pc.ontrack = (e) => {
+        /* LATENCY TUNING (receiver): the browser's jitter buffer can hold
+           SEVERAL SECONDS of video by default. 0 = "start playing frames the
+           instant they arrive" — the single biggest lag cut for live stage
+           monitoring. (Chrome/Edge; ignored elsewhere.) */
+        try {
+          (e.receiver as RTCRtpReceiver & { playoutDelayHint?: number }).playoutDelayHint = 0;
+        } catch {
+          /* unsupported */
+        }
         video.srcObject = e.streams[0];
         if (alive) dispatch({ type: "cam-status", camId, live: true });
       };
@@ -172,6 +216,16 @@ export default function CameraWindow() {
           {waiting ? "CONNECTING" : res || "LIVE"}
         </span>
       </div>
+      {/* live link diagnostics — green when healthy, turns amber when laggy */}
+      {stats && !waiting && (
+        <div
+          className={`bg-black/85 px-4 py-1 font-body text-[11px] font-bold tracking-[0.18em] ${
+            /lost/.test(stats) ? "text-amber-400" : "text-ice/60"
+          }`}
+        >
+          LINK {stats}
+        </div>
+      )}
       <div ref={arenaRef} className="relative aspect-video w-full overflow-hidden bg-black" />
       {waiting && (
         <div className="absolute inset-0 grid place-items-center bg-black/60">
