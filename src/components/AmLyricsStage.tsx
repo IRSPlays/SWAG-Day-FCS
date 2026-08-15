@@ -22,6 +22,9 @@ export interface AmLyricsStageProps {
   accent?: "volt" | "mag" | "vio";
   /** image under /public - drop a real single/album cover here for the show */
   cover?: string;
+  /** base lyric font size in px (active + upcoming lines scale from this).
+   *  58px reads well from the back of a hall; bump for stadium throws. */
+  lyricSize?: number;
 }
 
 const ACCENT_HEX: Record<string, string> = {
@@ -67,7 +70,7 @@ function buildTtml(cues: LyricCue[]): string {
 }
 /* ------------------------------ component ------------------------------ */
 
-export default function AmLyricsStage({ cues, header, bpm, accent = "vio", cover }: AmLyricsStageProps) {
+export default function AmLyricsStage({ cues, header, bpm, accent = "vio", cover, lyricSize = 58 }: AmLyricsStageProps) {
   const hex = ACCENT_HEX[accent];
   const total = useMemo(() => Math.max(2, (cues[cues.length - 1]?.t ?? 4) + 4), [cues]);
   const ttml = useMemo(() => buildTtml(cues), [cues]);
@@ -95,6 +98,9 @@ export default function AmLyricsStage({ cues, header, bpm, accent = "vio", cover
       el.autoscroll = true;
       el.interpolate = true;
       el.style.cssText = "display:block;width:100%;height:100%;";
+      /* scale the whole monochrome stack - the engine sizes every line, blur,
+         padding and wipe off this single var, so one bump enlarges it all */
+      el.style.setProperty("--lyplus-font-size-base", `${lyricSize}px`);
       hostRef.current.appendChild(el);
       elRef.current = el;
       t0Ref.current = performance.now();
@@ -118,7 +124,7 @@ export default function AmLyricsStage({ cues, header, bpm, accent = "vio", cover
       if (el) el.remove();
       elRef.current = null;
     };
-  }, [ttml, cues, total]);
+  }, [ttml, cues, total, lyricSize]);
 
   /* tap-along keys (bands drift - this rescues the sync) */
   useEffect(() => {
