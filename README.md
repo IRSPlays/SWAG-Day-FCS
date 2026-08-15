@@ -27,13 +27,13 @@ npm run dev
 - [x] **01** Scaffold + design tokens (anti-yellow-light palette: volt cyan / hot magenta / ultraviolet on violet-black · Anton / Instrument Serif / Space Grotesk)
 - [x] **02** Reference deck + mograph transitions → `/preview`
 - [x] **03** Stage output + keyboard nav + blackout → `/stage`
-- [x] **04** Realtime sync (`/controller` ⇄ `/stage` · BroadcastChannel locally, Supabase Realtime cross-device)
+- [x] **04** Realtime sync (`/controller` ⇄ `/stage` · BroadcastChannel locally, our own `/api/rt` SSE hub cross-device)
 - [x] **05** Audio mixer (procedural Web-Audio beds, crossfader, SFX pads, ducking — zero audio files)
 - [x] **06** Manual editor with live overrides → `/editor`
 - [x] **07** Audience mobile view: QR, emoji storms, live votes → `/audience`
 - [x] **08** Camera streaming: multi-camera phone → stage (WebRTC, flip/zoom on the phone, controller picks the broadcast source) → `/camera`
 - [x] **09** End-of-show survey + analytics → `/report`
-- [ ] **10** Vercel deploy
+- [ ] **10** Railway deploy
 
 ## How to run the show (local rehearsal)
 
@@ -42,13 +42,14 @@ npm run dev
 3. **Controller PC:** open `/controller` — drive slides, blackout, timers, voting, survey, camera and the mixer.
 4. **Phones:** scan the QR → `/audience` — reactions fly onto the stage, votes and survey flow in.
 5. **Camera phone:** `/audience` → *GO LIVE ON THE STAGE SCREEN* (or `/camera` directly), then the controller hits **STAGE CAM**.
+6. **Lyric operator phone:** `/lyrics` — wakes up when a lyric slide hits the stage; NEXT taps the lines along.
 
 Keyboard on `/stage`: ← → / SPACE navigate · ESC or B blackout · C camera · Q QR badge · F fullscreen.
 Keyboard on `/controller`: ← → navigate · B blackout · 1–6 SFX pads.
+Keyboard on a lyric slide: P play/pause track · ↓/↑ next/prev line · R restart.
 
-## Going cross-device (Vercel + Supabase)
+## Going cross-device (Railway — our own server)
 
-1. Deploy to Vercel (framework: Next.js).
-2. Create a free Supabase project → run `supabase/schema.sql` in the SQL editor.
-3. Set `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` in Vercel env (see `.env.example`).
-4. Without keys the system still works — synced across tabs of one browser via BroadcastChannel.
+1. Deploy to Railway (framework: Next.js, start command `npm run build && npm start` — one instance).
+2. Nothing else to configure: realtime runs on our own `/api/rt` SSE hub — deck cues, lyric commands and WebRTC camera signaling all flow through it. No third-party keys needed.
+3. If the server is unreachable the system still works — synced across tabs of one browser via BroadcastChannel.

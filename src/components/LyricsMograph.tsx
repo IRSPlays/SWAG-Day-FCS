@@ -57,6 +57,23 @@ const TREAT_CLASS: Record<Treat, string> = {
   verse: "font-body font-bold text-[84px] leading-[1.14] tracking-tight",
 };
 
+/* ADAPTIVE BACKGROUND - the stage lighting reacts to the song section:
+   chorus/lift = the backdrop IGNITES (brighter, saturated, aurora flares,
+   faster breathing); bridge = everything dims and slows (intimate);
+   verse/intro = the default cinematic mood. */
+interface Vibe {
+  brightness: number;
+  saturate: number;
+  glow: number;      // aurora strength multiplier
+  breath: number;    // aurora speed multiplier
+  scrim: number;     // dark veil opacity over the backdrop
+}
+const VIBES: Record<Treat, Vibe> = {
+  chorus: { brightness: 0.78, saturate: 1.45, glow: 1.6, breath: 1.9, scrim: 0.62 },
+  verse: { brightness: 0.5, saturate: 1.15, glow: 1, breath: 1, scrim: 0.82 },
+  bridge: { brightness: 0.3, saturate: 0.85, glow: 0.45, breath: 0.5, scrim: 0.92 },
+};
+
 export default function LyricsMograph({
   cues, header, bpm, accent = "vio", cover, ttmlUrl, audio, sections, slideId = "lyrics",
 }: LyricsMographProps) {
@@ -163,13 +180,15 @@ export default function LyricsMograph({
         setCur(idx);
       }
 
-      /* word-by-word lighting (direct DOM - no re-render) */
+      /* word-by-word lighting (direct DOM - no re-render).
+         MANUAL mode: no track timing exists, so the whole line is revealed
+         lit the moment it lands - the operator's tap IS the timing. */
       const words = lineWordsRef.current;
       const els = wordElsRef.current;
       for (let i = 0; i < words.length; i++) {
         const el = els[i];
         if (!el) continue;
-        if (time >= words[i].t) el.classList.add("on");
+        if (!a || time >= words[i].t) el.classList.add("on");
         else el.classList.remove("on");
       }
 
@@ -234,6 +253,7 @@ export default function LyricsMograph({
   const line = cur >= 0 ? lines[cur] : null;
   const next = cur + 1 < lines.length ? lines[cur + 1] : null;
   const treat = treatFor(line ? sectionAt(line.t, sectionsResolved) : section);
+  const vibe = VIBES[treat];
   return (
     <div
       className="absolute inset-0 overflow-hidden bg-[#07050f]"
@@ -252,31 +272,59 @@ export default function LyricsMograph({
       )}
 
       {/* ---------- backdrop: cover art, blurred, slow cinematic drift ---------- */}
+      {/* outer layer = the drift; inner layer = adaptive lighting per section */}
       <motion.div
-        className="absolute -inset-[12%] bg-cover bg-center"
-        style={{
-          backgroundImage: cover
-            ? `url(${cover})`
-            : `radial-gradient(ellipse at 30% 20%, ${hex}30, transparent 60%), radial-gradient(ellipse at 70% 80%, ${hex}22, transparent 55%)`,
-          filter: "blur(36px) saturate(1.15) brightness(0.5)",
-        }}
+        className="absolute -inset-[12%]"
         animate={{ scale: [1.05, 1.15], x: [0, -44], y: [0, 26] }}
         transition={{ duration: 30, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }}
-      />
-      {/* aurora - two accent blobs breathing at the song's BPM */}
+      >
+        <motion.div
+          className="h-full w-full bg-cover bg-center"
+          style={{
+            backgroundImage: cover
+              ? `url(${cover})`
+              : `radial-gradient(ellipse at 30% 20%, ${hex}30, transparent 60%), radial-gradient(ellipse at 70% 80%, ${hex}22, transparent 55%)`,
+          }}
+          initial={{ filter: "blur(36px) saturate(1.15) brightness(0.5)" }}
+          animate={{ filter: `blur(36px) saturate(${vibe.saturate}) brightness(${vibe.brightness})` }}
+          transition={{ duration: 1.4, ease: "easeInOut" }}
+        />
+      </motion.div>
+      {/* aurora - two accent blobs breathing at the song's BPM, flaring with the vibe */}
       <motion.div
         className="absolute -left-[6%] top-[10%] h-[52vh] w-[52vh] rounded-full"
         style={{ background: `radial-gradient(circle, ${hex}30, transparent 65%)`, filter: "blur(70px)", mixBlendMode: "screen" }}
-        animate={{ x: [0, 110, 0], opacity: [0.65, 1, 0.65] }}
-        transition={{ duration: (60 / bpm) * 8, repeat: Infinity, ease: "easeInOut" }}
+        animate={{
+          x: [0, 110, 0],
+          scale: [1, 1 + 0.12 * vibe.glow, 1],
+          opacity: [0.65 * vibe.glow, Math.min(1, vibe.glow), 0.65 * vibe.glow],
+        }}
+        transition={{
+          x: { duration: (60 / bpm) * 8, repeat: Infinity, ease: "easeInOut" },
+          scale: { duration: (60 / bpm) * 4 / vibe.breath, repeat: Infinity, ease: "easeInOut" },
+          opacity: { duration: (60 / bpm) * 8 / vibe.breath, repeat: Infinity, ease: "easeInOut" },
+        }}
       />
       <motion.div
         className="absolute -right-[8%] bottom-[6%] h-[60vh] w-[60vh] rounded-full"
         style={{ background: `radial-gradient(circle, ${hex}24, transparent 65%)`, filter: "blur(90px)", mixBlendMode: "screen" }}
-        animate={{ x: [0, -130, 0], opacity: [1, 0.55, 1] }}
-        transition={{ duration: (60 / bpm) * 11, repeat: Infinity, ease: "easeInOut" }}
+        animate={{
+          x: [0, -130, 0],
+          scale: [1, 1 + 0.1 * vibe.glow, 1],
+          opacity: [Math.min(1, vibe.glow), 0.55 * vibe.glow, Math.min(1, vibe.glow)],
+        }}
+        transition={{
+          x: { duration: (60 / bpm) * 11, repeat: Infinity, ease: "easeInOut" },
+          scale: { duration: (60 / bpm) * 5 / vibe.breath, repeat: Infinity, ease: "easeInOut" },
+          opacity: { duration: (60 / bpm) * 11 / vibe.breath, repeat: Infinity, ease: "easeInOut" },
+        }}
       />
-      <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(7,5,15,0.5), rgba(7,5,15,0.82) 65%, rgba(7,5,15,0.95))" }} />
+      <motion.div
+        className="absolute inset-0"
+        style={{ background: "linear-gradient(180deg, rgba(7,5,15,0.5), rgba(7,5,15,0.82) 65%, rgba(7,5,15,0.95))" }}
+        animate={{ opacity: vibe.scrim }}
+        transition={{ duration: 1.4, ease: "easeInOut" }}
+      />
       <div className="vignette absolute inset-0" />
 
       {/* ---------- centre stack ---------- */}
@@ -401,15 +449,11 @@ export default function LyricsMograph({
             </div>
           </div>
           <div className="text-right">
-            {audio ? (
-              !playing && (
-                <div className="inline-block border px-4 py-1.5 text-[15px] font-bold tracking-[0.3em]" style={{ borderColor: `${hex}66`, color: hex }}>
-                  PRESS P TO PLAY - OR DRIVE FROM /LYRICS
-                </div>
-              )
-            ) : (
-              <div className="inline-block border border-[#ff3da655] px-4 py-1.5 text-[15px] font-bold tracking-[0.3em] text-[#ff3da6]">
-                MANUAL - DRIVE FROM /LYRICS
+            {/* TRACK mode only: a reminder until the track starts.
+                MANUAL mode shows nothing here - the /lyrics operator owns it. */}
+            {audio && !playing && (
+              <div className="inline-block border px-4 py-1.5 text-[15px] font-bold tracking-[0.3em]" style={{ borderColor: `${hex}66`, color: hex }}>
+                PRESS P TO PLAY - OR DRIVE FROM /LYRICS
               </div>
             )}
             <div className="mt-2 font-body text-[22px] font-bold tracking-[0.2em] text-ice/70">

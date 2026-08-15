@@ -41,7 +41,7 @@ export interface LyricUI {
 
 interface ShowState {
   ready: boolean;
-  transportKind: "local" | "supabase";
+  transportKind: "local" | "server";
   index: number;
   dir: 1 | -1;
   blackout: boolean;

@@ -1,15 +1,15 @@
-/* Transport layer.
-   - With NEXT_PUBLIC_SUPABASE_URL + ANON_KEY set: Supabase Realtime broadcast
-     (cross-device — phones, controller PC and stage PC on different machines).
-   - Without keys: BroadcastChannel (same browser, multiple tabs/windows —
-     perfect for rehearsing on one laptop).
+/* Transport layer - OUR OWN SERVER (Railway), no third-party service.
+   - Primary: the /api/rt hub on this deployment (SSE downstream + POST
+     upstream). Cross-device by nature: phones, controller PC and stage PC
+     all connect to the same server.
+   - Fallback: BroadcastChannel (same browser) if the server is unreachable -
+     handy for rehearsing on one laptop with no network.
    The rest of the app never knows which one it got. */
 
-import { createClient } from "@supabase/supabase-js";
 import type { ShowEvent } from "./types";
 
 export interface Transport {
-  kind: "local" | "supabase";
+  kind: "local" | "server";
   publish: (ev: ShowEvent) => void;
   subscribe: (cb: (ev: ShowEvent) => void) => () => void;
 }
@@ -18,64 +18,78 @@ let instance: Transport | null = null;
 
 export function getTransport(): Transport {
   if (instance) return instance;
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key =
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  instance = url && key ? supabaseTransport(url, key) : localTransport();
+  if (typeof window === "undefined") {
+    /* SSR - a silent stub; real use is always inside client effects */
+    instance = {
+      kind: "local",
+      publish: () => {},
+      subscribe: () => () => {},
+    };
+    return instance;
+  }
+  instance = serverTransport();
   return instance;
 }
 
-/* ---------------- local (same browser) ---------------- */
+function serverTransport(): Transport {
+  const handlers = new Set<(ev: ShowEvent) => void>();
+  const queue: ShowEvent[] = [];
+  let online = false;
 
-function localTransport(): Transport {
+  /* same-browser backup for when the server can't be reached */
   const channel =
     typeof BroadcastChannel !== "undefined"
       ? new BroadcastChannel("swag-day-fs-show")
       : null;
-  return {
-    kind: "local",
-    publish: (ev) => channel?.postMessage(ev),
-    subscribe: (cb) => {
-      if (!channel) return () => {};
-      const h = (e: MessageEvent) => cb(e.data as ShowEvent);
-      channel.addEventListener("message", h);
-      return () => channel.removeEventListener("message", h);
-    },
-  };
-}
-
-/* ---------------- supabase (cross-device) ---------------- */
-
-function supabaseTransport(url: string, key: string): Transport {
-  const client = createClient(url, key);
-  const channel = client.channel("show-sync", {
-    config: { broadcast: { self: false } },
-  });
-  const handlers = new Set<(ev: ShowEvent) => void>();
-  const queue: ShowEvent[] = [];
-  let ready = false;
-  channel.on("broadcast", { event: "show" }, (msg) => {
-    const ev = msg.payload as ShowEvent;
+  channel?.addEventListener("message", (e) => {
+    const ev = e.data as ShowEvent;
     handlers.forEach((h) => h(ev));
   });
-  channel.subscribe((status) => {
-    if (status === "SUBSCRIBED") {
-      ready = true;
-      const pending = queue.splice(0);
-      pending.forEach((ev) =>
-        void channel.send({ type: "broadcast", event: "show", payload: ev })
-      );
+
+  /* downstream: server-sent events */
+  const es = new EventSource("/api/rt");
+  es.onopen = () => {
+    online = true;
+    const pending = queue.splice(0);
+    pending.forEach((ev) => void post(ev));
+  };
+  es.onerror = () => {
+    /* EventSource auto-reconnects; while down we fall back to the channel */
+    online = false;
+  };
+  es.onmessage = (e) => {
+    try {
+      const ev = JSON.parse(e.data as string) as ShowEvent;
+      handlers.forEach((h) => h(ev));
+    } catch {
+      /* keep-alive comment or malformed frame - ignore */
     }
-  });
+  };
+
+  /* upstream: POST (carries WebRTC SDP/ICE payloads reliably) */
+  const post = (ev: ShowEvent) =>
+    fetch("/api/rt", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(ev),
+      keepalive: true,
+    }).catch(() => {
+      /* server unreachable -> same-browser delivery only */
+      channel?.postMessage(ev);
+    });
+
   return {
-    kind: "supabase",
+    get kind() {
+      return online ? "server" : "local";
+    },
     publish: (ev) => {
-      if (!ready) {
+      if (!online) {
         queue.push(ev);
+        if (queue.length > 200) queue.shift();
+        channel?.postMessage(ev);
         return;
       }
-      void channel.send({ type: "broadcast", event: "show", payload: ev });
+      void post(ev);
     },
     subscribe: (cb) => {
       handlers.add(cb);

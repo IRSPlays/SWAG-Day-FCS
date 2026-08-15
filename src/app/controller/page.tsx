@@ -142,10 +142,10 @@ export default function ControllerPage() {
         <div className="flex items-center gap-4">
           <span
             className={`border-2 px-3 py-1 font-body text-[12px] font-bold tracking-[0.25em] ${
-              transportKind === "supabase" ? "border-volt text-volt" : "border-ice/30 text-ice/50"
+              transportKind === "server" ? "border-volt text-volt" : "border-ice/30 text-ice/50"
             }`}
           >
-            {transportKind === "supabase" ? "● SUPABASE LINK" : "● LOCAL TABS LINK"}
+            {transportKind === "server" ? "● SERVER LINK" : "● LOCAL TABS LINK"}
           </span>
           <Link href="/preview" className={`${btn} border-ice/25 text-ice/70 hover:border-volt hover:text-volt`}>
             PREVIEW
