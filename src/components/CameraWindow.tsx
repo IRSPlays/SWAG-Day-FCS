@@ -4,7 +4,7 @@
    Listens for cam-offer / cam-ice from the phone, answers, and shows
    the remote video in a framed LIVE window. */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getTransport } from "@/realtime/transport";
 import { newEventId, type ShowEvent, type ShowEventInput } from "@/realtime/types";
 
@@ -14,6 +14,7 @@ const RTC_CFG: RTCConfiguration = {
 
 export default function CameraWindow() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [res, setRes] = useState("");
 
   useEffect(() => {
     const t = getTransport();
@@ -73,13 +74,19 @@ export default function CameraWindow() {
           <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-ice" />
           STAGE CAM
         </span>
-        <span className="font-body text-[13px] font-bold tracking-[0.25em] text-ice/85">LIVE</span>
+        <span className="font-body text-[13px] font-bold tracking-[0.25em] text-ice/85">
+          {res || "LIVE"}
+        </span>
       </div>
       <video
         ref={videoRef}
         autoPlay
         playsInline
         muted
+        onLoadedMetadata={(e) => {
+          const v = e.currentTarget;
+          if (v.videoWidth > 0) setRes(`${v.videoWidth}×${v.videoHeight}`);
+        }}
         className="aspect-video w-full bg-black object-cover"
       />
     </div>
