@@ -9,7 +9,10 @@ import * as s04 from "./slides/04-the-games";
 import * as s05 from "./slides/05-live-vote";
 import * as s06 from "./slides/06-podium";
 import * as s07 from "./slides/07-finale";
+import * as s08 from "./slides/08-pulang";
 
-export const deck: SlideModule[] = [s01, s02, s03, s04, s05, s06, s07];
+/* s08 sits before the finale: the performance is the emotional peak,
+   the finale closes the show. Reorder freely — this list IS the running order. */
+export const deck: SlideModule[] = [s01, s02, s03, s04, s05, s06, s08, s07];
 
 export const eventTitle = "TEACHERS' DAY '26 — SUIT UP! SHOW UP! SPORT IT UP!";
