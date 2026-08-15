@@ -72,7 +72,9 @@ export default function StagePage() {
     <main className="fixed inset-0 select-none overflow-hidden bg-black">
       <DeckPlayer slide={current} dir={dir} />
       <ReactionLayer />
-      {cameraOn && <CameraWindow />}
+      {/* always mounted: multi-camera hub keeps every phone connected so the
+          controller's cam-active cuts are instant */}
+      <CameraWindow />
       {qrOn && !blackout && <QrBadge className="absolute bottom-8 right-8 z-40" />}
       {timerEndsAt && !blackout && (
         <Countdown endsAt={timerEndsAt} className="absolute left-8 top-8 z-40" />

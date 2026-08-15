@@ -69,6 +69,8 @@ export default function ControllerPage() {
   const blackout = useShow((s) => s.blackout);
   const qrOn = useShow((s) => s.qrOn);
   const cameraOn = useShow((s) => s.cameraOn);
+  const activeCam = useShow((s) => s.activeCam);
+  const cams = useShow((s) => s.cams);
   const pollOpen = useShow((s) => s.pollOpen);
   const surveyOpen = useShow((s) => s.surveyOpen);
   const timerEndsAt = useShow((s) => s.timerEndsAt);
@@ -112,6 +114,15 @@ export default function ControllerPage() {
         dispatch({ type: "cue", index: Math.max(0, index - 1), dir: -1 });
       else if (e.code === "KeyB")
         dispatch({ type: "toggle", key: "blackout", on: !useShow.getState().blackout });
+      else if (e.code === "KeyV") {
+        /* cycle the broadcast camera */
+        const camIds = Object.keys(useShow.getState().cams);
+        if (camIds.length) {
+          const cur = useShow.getState().activeCam;
+          const idx = camIds.indexOf(cur ?? "");
+          dispatch({ type: "cam-active", camId: camIds[(idx + 1) % camIds.length] });
+        }
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -354,6 +365,80 @@ export default function ControllerPage() {
                 </div>
               </button>
             ))}
+          </div>
+
+          {/* cameras — multi-cam: every connected phone, pick the broadcast source */}
+          <div className="border-2 border-ice/10 bg-panel/60 p-4">
+            <div className="flex items-center justify-between">
+              <span className="font-display text-2xl uppercase">Cameras</span>
+              <span className="font-body text-[11px] font-bold tracking-[0.2em] text-ice/40">
+                PHONE → STAGE · KEY V CYCLES
+              </span>
+            </div>
+            <div className="mt-3 space-y-2">
+              {Object.keys(cams).length === 0 && (
+                <p className="font-body text-[13px] text-ice/50">
+                  No phones live yet — a phone joins at /camera and becomes CAM 1.
+                </p>
+              )}
+              {Object.entries(cams).map(([id, cam]) => (
+                <div
+                  key={id}
+                  className={`flex items-center gap-3 border-2 px-3 py-2 transition-colors ${
+                    activeCam === id ? "border-mag bg-mag/10" : "border-ice/10"
+                  }`}
+                >
+                  <span
+                    className={`h-2.5 w-2.5 rounded-full ${
+                      cam.live ? "animate-pulse bg-volt" : "bg-ice/30"
+                    }`}
+                  />
+                  <span className="flex-1 font-body text-[14px] font-bold tracking-[0.18em]">
+                    {cam.name}
+                  </span>
+                  <span className="font-body text-[10px] font-bold tracking-[0.2em] text-ice/50">
+                    {cam.live ? "STREAMING" : "CONNECTING"}
+                  </span>
+                  <button
+                    onClick={() =>
+                      dispatch({ type: "cam-active", camId: activeCam === id ? null : id })
+                    }
+                    className={`${btn} ${
+                      activeCam === id
+                        ? "border-mag bg-mag text-ice"
+                        : "border-volt text-volt hover:bg-volt hover:text-court"
+                    }`}
+                  >
+                    {activeCam === id ? "OFF AIR" : "ON STAGE"}
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 flex items-center gap-3">
+              <button
+                onClick={() => dispatch({ type: "toggle", key: "cameraOn", on: !cameraOn })}
+                className={`${btn} flex-1 ${
+                  cameraOn
+                    ? "border-mag bg-mag text-ice"
+                    : "border-ice/25 text-ice/60 hover:border-mag hover:text-mag"
+                }`}
+              >
+                STAGE CAM {cameraOn ? "ON" : "OFF"}
+              </button>
+              <button
+                onClick={() => dispatch({ type: "toggle", key: "cameraOn", on: true })}
+                className={`${btn} flex-1 ${
+                  activeCam ? "border-volt bg-volt text-court" : "border-ice/25 text-ice/50"
+                }`}
+                disabled={!activeCam}
+              >
+                CUT TO {activeCam ? (cams[activeCam]?.name ?? "CAM") : "—"}
+              </button>
+            </div>
+            <p className="mt-2 font-body text-[11px] text-ice/40">
+              Every connected phone stays hot in the background — switching is instant, no
+              re-warming.
+            </p>
           </div>
 
           {/* audience QR */}

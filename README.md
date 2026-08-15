@@ -31,7 +31,7 @@ npm run dev
 - [x] **05** Audio mixer (procedural Web-Audio beds, crossfader, SFX pads, ducking — zero audio files)
 - [x] **06** Manual editor with live overrides → `/editor`
 - [x] **07** Audience mobile view: QR, emoji storms, live votes → `/audience`
-- [x] **08** Camera streaming: phone → stage (WebRTC) → `/camera`
+- [x] **08** Camera streaming: multi-camera phone → stage (WebRTC, flip/zoom on the phone, controller picks the broadcast source) → `/camera`
 - [x] **09** End-of-show survey + analytics → `/report`
 - [ ] **10** Vercel deploy
 

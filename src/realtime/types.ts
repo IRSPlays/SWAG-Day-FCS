@@ -40,11 +40,18 @@ export type ShowEvent =
   | (Base & { type: "meta"; slideId: string; patch: Record<string, unknown> | null })
   | (Base & { type: "deck"; order?: string[]; hidden?: string[] })
   | (Base & { type: "audio"; cmd: AudioCmd })
-  /* WebRTC camera signaling */
+  /* WebRTC camera signaling — multi-camera: every message is tagged with the
+     phone's camId so several phones can stream into the stage at once. */
+  | (Base & { type: "cam-hello"; camId: string })
+  | (Base & { type: "cam-bye"; camId: string })
   | (Base & { type: "cam-request" })
-  | (Base & { type: "cam-offer"; sdp: RTCSessionDescriptionInit })
-  | (Base & { type: "cam-answer"; sdp: RTCSessionDescriptionInit })
-  | (Base & { type: "cam-ice"; from: "phone" | "stage"; candidate: RTCIceCandidateInit });
+  | (Base & { type: "cam-offer"; camId: string; sdp: RTCSessionDescriptionInit })
+  | (Base & { type: "cam-answer"; camId: string; sdp: RTCSessionDescriptionInit })
+  | (Base & { type: "cam-ice"; from: "phone" | "stage"; camId: string; candidate: RTCIceCandidateInit })
+  /* the controller selects which phone is cut to the stage screen */
+  | (Base & { type: "cam-active"; camId: string | null })
+  /* stage flagging that a camera's video is actually flowing */
+  | (Base & { type: "cam-status"; camId: string; live: boolean });
 
 export const newEventId = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto

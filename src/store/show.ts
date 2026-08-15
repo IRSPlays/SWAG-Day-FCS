@@ -22,6 +22,11 @@ export interface AudioUI {
   fadeSeconds: number;
 }
 
+export interface CamInfo {
+  name: string;
+  live: boolean;
+}
+
 interface ShowState {
   ready: boolean;
   transportKind: "local" | "supabase";
@@ -33,6 +38,9 @@ interface ShowState {
   pollOpen: boolean;
   surveyOpen: boolean;
   timerEndsAt: number | null;
+  /* multi-camera roster + the controller's current broadcast pick */
+  cams: Record<string, CamInfo>;
+  activeCam: string | null;
   votes: Record<string, number>;
   reactionCounts: Record<string, number>;
   reactions: Reaction[];
@@ -135,6 +143,35 @@ export const useShow = create<ShowState>((set, get) => {
         });
         break;
       }
+      case "cam-hello":
+        set((s) =>
+          s.cams[ev.camId]
+            ? s
+            : {
+                cams: {
+                  ...s.cams,
+                  [ev.camId]: { name: `CAM ${Object.keys(s.cams).length + 1}`, live: false },
+                },
+              },
+        );
+        break;
+      case "cam-bye":
+        set((s) => {
+          const cams = { ...s.cams };
+          delete cams[ev.camId];
+          return { cams, activeCam: s.activeCam === ev.camId ? null : s.activeCam };
+        });
+        break;
+      case "cam-status":
+        set((s) => {
+          const cur = s.cams[ev.camId];
+          if (!cur || cur.live === ev.live) return s;
+          return { cams: { ...s.cams, [ev.camId]: { ...cur, live: ev.live } } };
+        });
+        break;
+      case "cam-active":
+        set({ activeCam: ev.camId });
+        break;
       default:
         break;
     }
@@ -167,6 +204,8 @@ export const useShow = create<ShowState>((set, get) => {
     pollOpen: false,
     surveyOpen: false,
     timerEndsAt: null,
+    cams: {},
+    activeCam: null,
     votes: {},
     reactionCounts: {},
     reactions: [],
