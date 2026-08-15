@@ -25,6 +25,15 @@ export interface AmLyricsStageProps {
   /** base lyric font size in px (active + upcoming lines scale from this).
    *  58px reads well from the back of a hall; bump for stadium throws. */
   lyricSize?: number;
+  /** URL to an official word-synced TTML (e.g. /lyrics/pulang.ttml). When set it
+   *  REPLACES the locally generated timing estimate - real word-level sync. */
+  ttmlUrl?: string;
+  /** path to the song file under /public. When set, the stage plays the track
+   *  itself (P = play/pause) and the lyrics lock to the audio clock: perfect
+   *  sync, tap-along arrows jump the TRACK to a line. */
+  audio?: string;
+  /** section markers for the stage badge, in SONG time (seconds) */
+  sections?: { t: number; label: string }[];
 }
 
 const ACCENT_HEX: Record<string, string> = {
@@ -68,20 +77,68 @@ function buildTtml(cues: LyricCue[]): string {
   });
   return `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xml:lang="ms">\n  <body>\n    <div>\n${lines.join("\n")}\n    </div>\n  </body>\n</tt>`;
 }
+/* -------------- TTML mining (line starts / song length / sections) -------------- */
+
+function tcToSec(tc: string): number {
+  const m = /^(\d+):(\d+):(\d+(?:\.\d+)?)$/.exec(tc.trim());
+  return m ? +m[1] * 3600 + +m[2] * 60 + parseFloat(m[3]) : 0;
+}
+
+function parseTtml(doc: string) {
+  /* every <p begin="..."> is a sung line - these drive tap-along + sections */
+  const lineTimes: number[] = [];
+  const pRe = /<p\b[^>]*\bbegin="([^"]+)"[^>]*>/g;
+  let m: RegExpExecArray | null;
+  while ((m = pRe.exec(doc))) lineTimes.push(tcToSec(m[1]));
+  let lastEnd = 0;
+  const eRe = /\bend="([^"]+)"/g;
+  while ((m = eRe.exec(doc))) lastEnd = Math.max(lastEnd, tcToSec(m[1]));
+  return { lineTimes, lastEnd };
+}
+
+function sectionAt(t: number, sections: { t: number; label: string }[]): string {
+  let s = sections[0]?.label ?? "";
+  for (const sec of sections) if (sec.t <= t) s = sec.label;
+  return s;
+}
 /* ------------------------------ component ------------------------------ */
 
-export default function AmLyricsStage({ cues, header, bpm, accent = "vio", cover, lyricSize = 58 }: AmLyricsStageProps) {
+export default function AmLyricsStage({
+  cues, header, bpm, accent = "vio", cover, lyricSize = 58, ttmlUrl, audio, sections,
+}: AmLyricsStageProps) {
   const hex = ACCENT_HEX[accent];
-  const total = useMemo(() => Math.max(2, (cues[cues.length - 1]?.t ?? 4) + 4), [cues]);
-  const ttml = useMemo(() => buildTtml(cues), [cues]);
+
+  /* official word-synced TTML wins; otherwise generate timings from the cue list */
+  const [fetched, setFetched] = useState<string | null>(null);
+  useEffect(() => {
+    if (!ttmlUrl) { setFetched(null); return; }
+    let dead = false;
+    fetch(ttmlUrl).then((r) => r.text()).then((t) => { if (!dead) setFetched(t); }).catch(() => {});
+    return () => { dead = true; };
+  }, [ttmlUrl]);
+  const generated = useMemo(() => buildTtml(cues), [cues]);
+  const ttmlDoc = fetched ?? generated;
+
+  /* line starts + song length straight out of the TTML itself */
+  const { lineTimes, lastEnd } = useMemo(() => parseTtml(ttmlDoc), [ttmlDoc]);
+  const fallbackTotal = useMemo(() => Math.max(2, lastEnd || (cues[cues.length - 1]?.t ?? 4) + 4), [lastEnd, cues]);
+  const [audioDuration, setAudioDuration] = useState(0);
+  const total = audioDuration || fallbackTotal;
+
+  const sectionsResolved = useMemo(
+    () => (sections?.length ? sections : cues.filter((c) => c.label).map((c) => ({ t: c.t, label: c.label as string }))),
+    [sections, cues],
+  );
 
   const hostRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const elRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const t0Ref = useRef<number>(0);
   const offRef = useRef(0);
   const [manual, setManual] = useState(false);
-  const [section, setSection] = useState(cues[0]?.label ?? cues[0]?.style ?? "");
+  const [playing, setPlaying] = useState(false);
+  const [section, setSection] = useState(sectionsResolved[0]?.label ?? cues[0]?.style ?? "");
 
   /* mount the am-lyrics custom element (client only) + run the clock */
   useEffect(() => {
@@ -92,7 +149,7 @@ export default function AmLyricsStage({ cues, header, bpm, accent = "vio", cover
     import("@uimaxbai/am-lyrics/am-lyrics.js").then(() => {
       if (dead || !hostRef.current) return;
       el = document.createElement("am-lyrics");
-      el.ttml = ttml;
+      el.ttml = ttmlDoc;
       el.highlightColor = "#f4f7ff";
       el.fontFamily = "'Space Grotesk', 'Segoe UI', sans-serif";
       el.autoscroll = true;
@@ -106,13 +163,17 @@ export default function AmLyricsStage({ cues, header, bpm, accent = "vio", cover
       t0Ref.current = performance.now();
 
       const tick = () => {
-        const t = (performance.now() - t0Ref.current) / 1000 + offRef.current;
+        /* audio mode: the track IS the clock - lyrics lock to it exactly.
+           no audio: wall clock + manual offset (band tap-along). */
+        const t = audioRef.current
+          ? audioRef.current.currentTime
+          : (performance.now() - t0Ref.current) / 1000 + offRef.current;
         if (elRef.current) elRef.current.currentTime = Math.max(0, t * 1000);
         if (barRef.current) barRef.current.style.width = `${Math.min(1, t / total) * 100}%`;
-        let idx = 0;
-        for (let i = 0; i < cues.length; i++) if (cues[i].t <= t) idx = i;
-        const next = cues[idx].label ?? cues[idx].style ?? "";
-        setSection((prev) => (prev === next ? prev : next));
+        setSection((prev) => {
+          const next = sectionAt(t, sectionsResolved);
+          return prev === next ? prev : next;
+        });
         raf = requestAnimationFrame(tick);
       };
       raf = requestAnimationFrame(tick);
@@ -124,20 +185,43 @@ export default function AmLyricsStage({ cues, header, bpm, accent = "vio", cover
       if (el) el.remove();
       elRef.current = null;
     };
-  }, [ttml, cues, total, lyricSize]);
+  }, [ttmlDoc, sectionsResolved, total, lyricSize]);
 
   /* tap-along keys (bands drift - this rescues the sync) */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      /* AUDIO MODE: P = play/pause, arrows jump the TRACK to a line (always
+         locked), R restarts from the top. No drift possible. */
+      if (audioRef.current) {
+        const a = audioRef.current;
+        const now = a.currentTime;
+        let idx = 0;
+        for (let i = 0; i < lineTimes.length; i++) if (lineTimes[i] <= now) idx = i;
+        if (e.code === "KeyP") {
+          if (a.paused) void a.play();
+          else a.pause();
+          e.stopImmediatePropagation();
+        } else if (e.code === "ArrowDown") {
+          a.currentTime = lineTimes[Math.min(lineTimes.length - 1, idx + 1)] ?? now;
+          e.stopImmediatePropagation();
+        } else if (e.code === "ArrowUp") {
+          a.currentTime = lineTimes[Math.max(0, idx - 1)] ?? 0;
+          e.stopImmediatePropagation();
+        } else if (e.code === "KeyR") {
+          a.currentTime = 0;
+          e.stopImmediatePropagation();
+        }
+        return;
+      }
       const now = (performance.now() - t0Ref.current) / 1000 + offRef.current;
       let idx = 0;
-      for (let i = 0; i < cues.length; i++) if (cues[i].t <= now) idx = i;
+      for (let i = 0; i < lineTimes.length; i++) if (lineTimes[i] <= now) idx = i;
       if (e.code === "ArrowDown") {
-        offRef.current += cues[Math.min(cues.length - 1, idx + 1)].t - now;
+        offRef.current += lineTimes[Math.min(lineTimes.length - 1, idx + 1)] - now;
         setManual(true);
         e.stopImmediatePropagation();
       } else if (e.code === "ArrowUp") {
-        offRef.current += cues[Math.max(0, idx - 1)].t - now;
+        offRef.current += lineTimes[Math.max(0, idx - 1)] - now;
         setManual(true);
         e.stopImmediatePropagation();
       } else if (e.code === "KeyR") {
@@ -149,7 +233,7 @@ export default function AmLyricsStage({ cues, header, bpm, accent = "vio", cover
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [cues]);
+  }, [lineTimes]);
 
   const beat = 60 / Math.max(40, bpm);
   return (
@@ -165,6 +249,19 @@ export default function AmLyricsStage({ cues, header, bpm, accent = "vio", cover
         <div className="bg-lanes absolute inset-0 opacity-[0.05]" />
         <div className="absolute inset-0" style={{ background: "radial-gradient(120% 90% at 50% 45%, transparent 55%, #08060f 100%)" }} />
       </div>
+
+      {/* the track itself - when present it IS the clock (P = play/pause) */}
+      {audio && (
+        <audio
+          ref={audioRef}
+          src={audio}
+          preload="auto"
+          className="hidden"
+          onLoadedMetadata={(e) => setAudioDuration(e.currentTarget.duration || 0)}
+          onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
+        />
+      )}
 
       <div className="relative flex h-full w-full items-center gap-[90px] px-[110px]">
         {/* LEFT - cover art + song header */}
@@ -227,11 +324,20 @@ export default function AmLyricsStage({ cues, header, bpm, accent = "vio", cover
               transition={{ delay: 0.5, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             />
             <div className="mt-4 text-[26px] font-medium tracking-[0.14em] text-[#f4f7ff99]">{header.artist}</div>
-            {manual && (
+            {audio ? (
+              !playing && (
+                <div
+                  className="mt-5 inline-block border px-3 py-1 text-[12px] font-bold tracking-[0.3em]"
+                  style={{ borderColor: `${hex}66`, color: hex }}
+                >
+                  PRESS P TO PLAY THE TRACK
+                </div>
+              )
+            ) : manual ? (
               <div className="mt-5 inline-block border border-[#ff3da655] px-3 py-1 text-[12px] font-bold tracking-[0.3em] text-[#ff3da6]">
                 MANUAL - R TO RE-SYNC
               </div>
-            )}
+            ) : null}
           </div>
         </div>
 

@@ -1,24 +1,23 @@
 "use client";
 
-/* 08 · PERFORMANCE — “Pulang” (Insomniacks) · TESTBED for the lyric engine.
-    IMPORTANT: the lines below are ORIGINAL placeholder lyrics with real
-    timing for a ~80s arrangement — swap in the official lyrics line-by-line
-    for the live show (keep each cue’s `t` aligned to the band). Emphasis
-    words go in `emph`; sections drive the mograph treatment automatically. */
+/* 08 · PERFORMANCE — “Pulang” (Insomniacks).
+    Runs on the OFFICIAL Apple-Music word-synced TTML (public/lyrics/pulang.ttml)
+    plus the actual track (public/audio/pulang.flac). The audio IS the clock, so
+    lyrics are locked word-for-word - no drift, no tap-along guesswork.
+    Keys on the stage machine: P play/pause, ↓/↑ jump to next/prev line, R restart. */
 
 import SlideShell from "@/layouts/SlideShell";
 import AmLyricsStage from "@/components/AmLyricsStage";
 import { useSlideContent } from "@/store/show";
-import type { LyricCue } from "../lyrics";
 import type { SlideMeta } from "../types";
 
 export const meta: SlideMeta = {
   id: "pulang",
   title: "08 · Performance — Pulang",
   transition: "baton-change",
-  durationHint: 84,
+  durationHint: 276,
   notes:
-    "Lyric slide — auto-plays on entry. Tap-along on the stage keys: ↓ next line, ↑ prev line, R re-sync to clock. Drop the music bed and let the band carry.",
+    "Lyric slide - press P on the stage keys to start the track; lyrics follow it word-for-word. ↓/↑ jump to the next/prev line, R restarts. If the band performs it live instead, remove the audio prop and tap along with ↓/↑.",
   accent: "vio",
 };
 
@@ -28,34 +27,35 @@ export const content = {
   artist: "INSOMNIACKS",
 };
 
-export const cues: LyricCue[] = [
-  { t: 0.6, style: "hook", label: "OPENING", text: "PULANG" },
-  { t: 5.2, style: "verse", label: "VERSE 1", text: "Langit petang menunggu di simpang" },
-  { t: 9.4, style: "verse", text: "Langkah kita pulang pada cahaya" },
-  { t: 13.6, style: "verse", text: "Jalan yang jauh terasa semakin dekat" },
-  { t: 17.8, style: "verse", text: "Satu nama kupanjatkan dalam doa" },
-  { t: 22.2, style: "pre", label: "PRE-CHORUS", text: "Walau badai halangi" },
-  { t: 25.6, style: "pre", text: "Hati ini tetap pulang", emph: ["pulang"] },
-  { t: 29.6, style: "chorus", label: "CHORUS", text: "Pulang kepadamu", emph: ["Pulang"] },
-  { t: 33.4, style: "chorus", text: "Tempat kisah kita bermula" },
-  { t: 37.2, style: "chorus", text: "Pulang kepadamu", emph: ["Pulang"] },
-  { t: 41.0, style: "chorus", text: "Rumah hati yang sentiasa menunggu", emph: ["menunggu"] },
-  { t: 45.8, style: "verse", label: "VERSE 2", text: "Setiap luka mengajar kita berdiri" },
-  { t: 49.8, style: "verse", text: "Setiap jalan membawa pulang" },
-  { t: 53.8, style: "pre", label: "PRE-CHORUS", text: "Walau jauh mata memandang" },
-  { t: 57.6, style: "chorus", label: "CHORUS", text: "Selagi ada jalan pulang", emph: ["pulang"] },
-  { t: 61.2, style: "chorus", text: "Selagi ada nama menunggu", emph: ["menunggu"] },
-  { t: 64.8, style: "chorus", text: "Akan pulang — akan pulang", emph: ["pulang"] },
-  { t: 69.2, style: "bridge", label: "BRIDGE", text: "Dan bila malam mula menyepi…" },
-  { t: 73.0, style: "bridge", text: "ingatlah — ada cahaya di rumah" },
-  { t: 77.5, style: "outro", label: "OUTRO", text: "pulang." },
+/* section markers lifted straight from the official TTML timestamps */
+export const sections = [
+  { t: 0, label: "INTRO" },
+  { t: 18.9, label: "VERSE 1" },
+  { t: 45.6, label: "PRE-CHORUS" },
+  { t: 54.5, label: "CHORUS" },
+  { t: 90.1, label: "VERSE 2" },
+  { t: 107.8, label: "CHORUS" },
+  { t: 143.3, label: "BRIDGE" },
+  { t: 166.7, label: "LIFT" },
+  { t: 201.9, label: "FINAL PLEA" },
+  { t: 216.4, label: "INSTRUMENTAL" },
+  { t: 237.4, label: "FINAL CHORUS" },
 ];
 
 export default function PulangPerformance() {
   const header = useSlideContent(meta.id, content);
   return (
     <SlideShell>
-      <AmLyricsStage cues={cues} header={header} bpm={82} accent="vio" cover="/cover-pulang.svg" />
+      <AmLyricsStage
+        cues={[]}
+        header={header}
+        bpm={82}
+        accent="vio"
+        cover="/cover-pulang.svg"
+        ttmlUrl="/lyrics/pulang.ttml"
+        audio="/audio/pulang.flac"
+        sections={sections}
+      />
     </SlideShell>
   );
 }
