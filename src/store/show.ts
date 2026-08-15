@@ -258,6 +258,9 @@ export const useShow = create<ShowState>((set, get) => {
         seen.add(ev.id);
         apply(ev);
       });
+      /* live link status - the badge must reflect reality as connections
+         come and go, not a snapshot from page load */
+      t.onStatus((kind) => set({ transportKind: kind }));
       set({ ready: true, transportKind: t.kind });
     },
 

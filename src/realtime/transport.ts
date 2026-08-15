@@ -12,6 +12,8 @@ export interface Transport {
   kind: "local" | "server";
   publish: (ev: ShowEvent) => void;
   subscribe: (cb: (ev: ShowEvent) => void) => () => void;
+  /** live link status â€” fires whenever the server link opens or drops */
+  onStatus: (cb: (kind: "local" | "server") => void) => () => void;
 }
 
 let instance: Transport | null = null;
@@ -24,6 +26,7 @@ export function getTransport(): Transport {
       kind: "local",
       publish: () => {},
       subscribe: () => () => {},
+      onStatus: () => () => {},
     };
     return instance;
   }
@@ -33,8 +36,29 @@ export function getTransport(): Transport {
 
 function serverTransport(): Transport {
   const handlers = new Set<(ev: ShowEvent) => void>();
-  const queue: ShowEvent[] = [];
+  const statusCbs = new Set<(kind: "local" | "server") => void>();
   let online = false;
+
+  const setStatus = (up: boolean) => {
+    if (up === online) return;
+    online = up;
+    statusCbs.forEach((cb) => cb(up ? "server" : "local"));
+  };
+
+  /* event-id dedupe: an event can arrive via BOTH the BroadcastChannel
+     (same-browser mirror) and the server stream â€” deliver each exactly once */
+  const seenIds = new Set<string>();
+  const deliver = (ev: ShowEvent) => {
+    if (!ev.id || seenIds.has(ev.id)) return;
+    seenIds.add(ev.id);
+    if (seenIds.size > 600) {
+      for (const id of seenIds) {
+        seenIds.delete(id);
+        if (seenIds.size <= 400) break;
+      }
+    }
+    handlers.forEach((h) => h(ev));
+  };
 
   /* same-browser backup for when the server can't be reached */
   const channel =
@@ -42,40 +66,35 @@ function serverTransport(): Transport {
       ? new BroadcastChannel("swag-day-fs-show")
       : null;
   channel?.addEventListener("message", (e) => {
-    const ev = e.data as ShowEvent;
-    handlers.forEach((h) => h(ev));
+    deliver(e.data as ShowEvent);
   });
 
   /* downstream: server-sent events */
   const es = new EventSource("/api/rt");
   es.onopen = () => {
-    online = true;
-    const pending = queue.splice(0);
-    pending.forEach((ev) => void post(ev));
+    setStatus(true);
   };
   es.onerror = () => {
-    /* EventSource auto-reconnects; while down we fall back to the channel */
-    online = false;
+    /* EventSource auto-reconnects; while down we run on the channel */
+    setStatus(false);
   };
   es.onmessage = (e) => {
     try {
-      const ev = JSON.parse(e.data as string) as ShowEvent;
-      handlers.forEach((h) => h(ev));
+      deliver(JSON.parse(e.data as string) as ShowEvent);
     } catch {
       /* keep-alive comment or malformed frame - ignore */
     }
   };
 
-  /* upstream: POST (carries WebRTC SDP/ICE payloads reliably) */
+  /* upstream: POST (carries WebRTC SDP/ICE payloads reliably).
+     ALWAYS posted, even before the SSE stream opens â€” a slow-opening stream
+     must never stall cross-device signaling. */
   const post = (ev: ShowEvent) =>
     fetch("/api/rt", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(ev),
       keepalive: true,
-    }).catch(() => {
-      /* server unreachable -> same-browser delivery only */
-      channel?.postMessage(ev);
     });
 
   return {
@@ -84,16 +103,25 @@ function serverTransport(): Transport {
     },
     publish: (ev) => {
       if (!online) {
-        queue.push(ev);
-        if (queue.length > 200) queue.shift();
+        /* server link not confirmed yet: mirror locally right away (zero
+           latency for same-browser rehearsal) AND fire the POST regardless â€”
+           remote devices get it from the server even if our SSE is still
+           handshaking. dedupe guarantees no double delivery. */
         channel?.postMessage(ev);
-        return;
       }
-      void post(ev);
+      void post(ev).catch(() => {
+        /* server truly unreachable -> same-browser delivery only */
+        channel?.postMessage(ev);
+      });
     },
     subscribe: (cb) => {
       handlers.add(cb);
       return () => handlers.delete(cb);
+    },
+    onStatus: (cb) => {
+      statusCbs.add(cb);
+      cb(online ? "server" : "local");
+      return () => statusCbs.delete(cb);
     },
   };
 }
