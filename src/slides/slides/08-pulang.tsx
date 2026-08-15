@@ -51,7 +51,7 @@ export default function PulangPerformance() {
         header={header}
         bpm={82}
         accent="vio"
-        cover="/cover-pulang.svg"
+        cover="/cover-pulang.jpg"
         ttmlUrl="/lyrics/pulang.ttml"
         audio="/audio/pulang.flac"
         sections={sections}
