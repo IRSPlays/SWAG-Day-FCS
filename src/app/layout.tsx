@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Anton, Instrument_Serif, Space_Grotesk } from "next/font/google";
+import { Anton, Instrument_Serif, IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
 const anton = Anton({
@@ -23,6 +23,14 @@ const grotesk = Space_Grotesk({
   display: "swap",
 });
 
+/* editorial mono - credits, badges, chrome labels (gig-poster voice) */
+const plex = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-plex",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "SWAG DAY FS — Stage Production System",
   description:
@@ -33,7 +41,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${anton.variable} ${instrument.variable} ${grotesk.variable}`}>
+    <html lang="en" className={`${anton.variable} ${instrument.variable} ${grotesk.variable} ${plex.variable}`}>
       <body>{children}</body>
     </html>
   );

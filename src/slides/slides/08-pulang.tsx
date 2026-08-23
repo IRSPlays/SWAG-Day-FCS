@@ -42,6 +42,12 @@ export const sections = [
   { t: 237.4, label: "FINAL CHORUS" },
 ];
 
+/* who is actually on stage — rendered by the mograph engine */
+export const performers = [
+  { role: "PIANO", names: ["Haziq"] },
+  { role: "VOCALS", names: ["Daniel", "Syazwan", "Anaqi"] },
+];
+
 export default function PulangPerformance() {
   const header = useSlideContent(meta.id, content);
   return (
@@ -55,6 +61,7 @@ export default function PulangPerformance() {
         ttmlUrl="/lyrics/pulang.ttml"
         audio="/audio/pulang.flac"
         sections={sections}
+        credits={performers}
         slideId={meta.id}
       />
     </SlideShell>

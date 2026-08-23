@@ -21,6 +21,11 @@ import { getTransport } from "@/realtime/transport";
 import { useShow } from "@/store/show";
 import { cuesToLines, fmtClock, parseTtml, sectionAt, type LyricWord } from "@/lib/lyrics";
 
+export interface PerformerCredit {
+  role: string;
+  names: string[];
+}
+
 export interface LyricsMographProps {
   cues: LyricCue[];
   header: SongHeader;
@@ -31,6 +36,8 @@ export interface LyricsMographProps {
   ttmlUrl?: string;
   audio?: string;
   sections?: { t: number; label: string }[];
+  /** who is on stage - shown on the intro card + persistent credit line */
+  credits?: PerformerCredit[];
   /** slide id - routes lyric-cmd / lyric-state for the operator console */
   slideId?: string;
 }
@@ -52,9 +59,9 @@ function treatFor(label: string): Treat {
 }
 
 const TREAT_CLASS: Record<Treat, string> = {
-  chorus: "font-display uppercase text-[132px] leading-[1.04] tracking-[0.015em]",
-  bridge: "font-serifit italic text-[96px] leading-[1.14]",
-  verse: "font-body font-bold text-[84px] leading-[1.14] tracking-tight",
+  chorus: "font-display uppercase text-[148px] leading-[1.02] tracking-[0.015em]",
+  bridge: "font-serifit italic text-[112px] leading-[1.12]",
+  verse: "font-body font-bold text-[100px] leading-[1.12] tracking-tight",
 };
 
 /* ADAPTIVE BACKGROUND - the stage lighting reacts to the song section:
@@ -74,8 +81,17 @@ const VIBES: Record<Treat, Vibe> = {
   bridge: { brightness: 0.3, saturate: 0.85, glow: 0.45, breath: 0.5, scrim: 0.92 },
 };
 
+/* CAMERA MOVEMENT - a virtual camera dollies per section: pushes IN through
+   choruses (energy), drifts laterally in verses (documentary calm), settles
+   wide in bridges (stillness). Glides between moves over ~8s. */
+const CAM_MOVE: Record<Treat, { scale: number; x: number; y: number }> = {
+  chorus: { scale: 1.085, x: 0, y: -12 },
+  verse: { scale: 1.035, x: -18, y: 6 },
+  bridge: { scale: 1.005, x: 14, y: 10 },
+};
+
 export default function LyricsMograph({
-  cues, header, bpm, accent = "vio", cover, ttmlUrl, audio, sections, slideId = "lyrics",
+  cues, header, bpm, accent = "vio", cover, ttmlUrl, audio, sections, credits, slideId = "lyrics",
 }: LyricsMographProps) {
   const hex = ACCENT_HEX[accent];
   const dispatch = useShow((s) => s.dispatch);
@@ -271,6 +287,13 @@ export default function LyricsMograph({
         />
       )}
 
+      {/* ---------- CAMERA RIG — the whole scene rides a virtual camera that
+             dollies per section (CAM_MOVE). Bottom HUD stays fixed outside. ---------- */}
+      <motion.div
+        className="absolute inset-0"
+        animate={CAM_MOVE[treat]}
+        transition={{ duration: 8, ease: [0.22, 1, 0.36, 1] }}
+      >
       {/* ---------- backdrop: cover art, blurred, slow cinematic drift ---------- */}
       {/* outer layer = the drift; inner layer = adaptive lighting per section */}
       <motion.div
@@ -339,7 +362,7 @@ export default function LyricsMograph({
                 animate={{ opacity: 1, y: 0, letterSpacing: "0.4em" }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-                className="border px-5 py-1.5 text-[17px] font-bold uppercase"
+                className="border px-5 py-1.5 font-mono text-[15px] font-semibold uppercase"
                 style={{ borderColor: `${hex}55`, color: hex, background: "#07050fcc" }}
               >
                 {section}
@@ -366,9 +389,20 @@ export default function LyricsMograph({
                     ref={(el) => { wordElsRef.current[i] = el; }}
                     className={`lw inline-block will-change-transform ${treat === "chorus" ? "accent-on" : ""}`}
                     style={{ marginRight: "0.26em" }}
-                    initial={{ y: "0.55em", opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ type: "spring", stiffness: 420, damping: 30, delay: i * 0.05 }}
+                    /* alternate entrance direction per line - even lines whip
+                       up, odd lines drop in; chorus springs are snappier */
+                    initial={{
+                      y: cur % 2 === 0 ? "0.55em" : "-0.55em",
+                      rotate: cur % 2 === 0 ? 2 : -2,
+                      opacity: 0,
+                    }}
+                    animate={{ y: 0, opacity: 1, rotate: 0 }}
+                    transition={{
+                      type: "spring",
+                      stiffness: treat === "chorus" ? 520 : 420,
+                      damping: 30,
+                      delay: i * (treat === "chorus" ? 0.04 : 0.05),
+                    }}
                   >
                     {w.text}
                   </motion.span>
@@ -382,12 +416,12 @@ export default function LyricsMograph({
                 exit={{ opacity: 0, y: -50, filter: "blur(14px)" }}
                 transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
               >
-                <div className="text-[19px] font-bold tracking-[0.5em]" style={{ color: hex }}>
+                <div className="font-mono text-[17px] font-medium tracking-[0.5em]" style={{ color: hex }}>
                   {header.kind}
                 </div>
                 <LetterStagger
                   text={header.song}
-                  className="mt-5 font-display text-[150px] font-black uppercase leading-[0.92] text-ice"
+                  className="mt-5 font-display text-[170px] font-black uppercase leading-[0.9] text-ice"
                 />
                 <motion.div
                   className="mx-auto mt-6 h-[3px] w-32"
@@ -396,9 +430,43 @@ export default function LyricsMograph({
                   animate={{ scaleX: 1 }}
                   transition={{ delay: 0.55, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
                 />
-                <div className="mt-6 font-body text-[34px] font-medium tracking-[0.2em] text-ice/70">
+                <div className="mt-5 font-body text-[34px] font-medium tracking-[0.2em] text-ice/70">
                   {header.artist}
                 </div>
+                {/* PERFORMED BY - staged credits, gig-poster voice */}
+                {credits?.length ? (
+                  <div className="mt-14 flex flex-col items-center gap-6">
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.85, duration: 0.8 }}
+                      className="font-mono text-[13px] font-medium tracking-[0.55em]"
+                      style={{ color: `${hex}cc` }}
+                    >
+                      PERFORMED BY
+                    </motion.div>
+                    {credits.map((c, i) => (
+                      <motion.div
+                        key={c.role}
+                        initial={{ opacity: 0, y: 26 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 1 + i * 0.25, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                        className="flex items-center gap-4"
+                      >
+                        <span
+                          className="font-mono text-[15px] font-semibold tracking-[0.35em]"
+                          style={{ color: hex }}
+                        >
+                          {c.role}
+                        </span>
+                        <span className="h-px w-12" style={{ background: `${hex}66` }} />
+                        <span className="font-body text-[32px] font-bold tracking-[0.03em] text-ice/90">
+                          {c.names.join("  ·  ")}
+                        </span>
+                      </motion.div>
+                    ))}
+                  </div>
+                ) : null}
               </motion.div>
             )}
           </AnimatePresence>
@@ -423,6 +491,8 @@ export default function LyricsMograph({
           </AnimatePresence>
         </div>
       </div>
+      </motion.div>
+
       {/* ---------- bottom chrome: song info - clock - progress rail ---------- */}
       <div className="absolute inset-x-0 bottom-0 z-20">
         <div className="flex items-end justify-between px-10 pb-7">
@@ -446,6 +516,13 @@ export default function LyricsMograph({
               <div className="mt-1 font-body text-[26px] font-bold tracking-[0.08em] text-ice">
                 {header.song} <span className="text-ice/50">- {header.artist}</span>
               </div>
+              {credits?.length ? (
+                <div className="mt-1.5 font-mono text-[12px] font-medium tracking-[0.14em] text-ice/55">
+                  {credits
+                    .map((c) => `${c.role} — ${c.names.join(" · ").toUpperCase()}`)
+                    .join("   /   ")}
+                </div>
+              ) : null}
             </div>
           </div>
           <div className="text-right">
