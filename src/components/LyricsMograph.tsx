@@ -14,7 +14,7 @@
    Stage keys still work: P play/pause, arrows next/prev, R restart. */
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, animate as mAnim, motion, useMotionValue } from "motion/react";
 import type { LyricCue, SongHeader } from "@/slides/lyrics";
 import { LetterStagger } from "@/animations";
 import { getTransport } from "@/realtime/transport";
@@ -58,11 +58,19 @@ function treatFor(label: string): Treat {
   return "verse";
 }
 
-const TREAT_CLASS: Record<Treat, string> = {
-  chorus: "font-display uppercase text-[148px] leading-[1.02] tracking-[0.015em]",
-  bridge: "font-serifit italic text-[112px] leading-[1.12]",
-  verse: "font-body font-bold text-[100px] leading-[1.12] tracking-tight",
+/* typography per treatment — INLINE STYLES on purpose: guaranteed to apply
+   no matter what the utility pipeline does, and sized for a 1080p stage.
+   fitSize() shrinks long lines so they always fit the frame width. */
+const TREAT_FONT: Record<Treat, { family: string; size: number; caps?: boolean; serif?: boolean }> = {
+  chorus: { family: "var(--font-display)", size: 172, caps: true },
+  bridge: { family: "var(--font-instrument)", size: 130, serif: true },
+  verse: { family: "var(--font-body)", size: 118 },
 };
+
+/* keep the line inside ~86% of the 1920 frame: est. glyph ~0.5em wide */
+function fitSize(base: number, text: string): number {
+  return Math.min(base, Math.max(60, 3300 / Math.max(8, text.length)));
+}
 
 /* ADAPTIVE BACKGROUND - the stage lighting reacts to the song section:
    chorus/lift = the backdrop IGNITES (brighter, saturated, aurora flares,
@@ -76,18 +84,18 @@ interface Vibe {
   scrim: number;     // dark veil opacity over the backdrop
 }
 const VIBES: Record<Treat, Vibe> = {
-  chorus: { brightness: 0.78, saturate: 1.45, glow: 1.6, breath: 1.9, scrim: 0.62 },
-  verse: { brightness: 0.5, saturate: 1.15, glow: 1, breath: 1, scrim: 0.82 },
-  bridge: { brightness: 0.3, saturate: 0.85, glow: 0.45, breath: 0.5, scrim: 0.92 },
+  chorus: { brightness: 0.9, saturate: 1.65, glow: 2.4, breath: 2.6, scrim: 0.5 },
+  verse: { brightness: 0.56, saturate: 1.2, glow: 1.25, breath: 1.3, scrim: 0.76 },
+  bridge: { brightness: 0.24, saturate: 0.8, glow: 0.35, breath: 0.4, scrim: 0.94 },
 };
 
 /* CAMERA MOVEMENT - a virtual camera dollies per section: pushes IN through
    choruses (energy), drifts laterally in verses (documentary calm), settles
    wide in bridges (stillness). Glides between moves over ~8s. */
 const CAM_MOVE: Record<Treat, { scale: number; x: number; y: number }> = {
-  chorus: { scale: 1.085, x: 0, y: -12 },
-  verse: { scale: 1.035, x: -18, y: 6 },
-  bridge: { scale: 1.005, x: 14, y: 10 },
+  chorus: { scale: 1.14, x: 0, y: -24 },
+  verse: { scale: 1.07, x: -36, y: 12 },
+  bridge: { scale: 1.01, x: 28, y: 18 },
 };
 
 export default function LyricsMograph({
@@ -270,6 +278,17 @@ export default function LyricsMograph({
   const next = cur + 1 < lines.length ? lines[cur + 1] : null;
   const treat = treatFor(line ? sectionAt(line.t, sectionsResolved) : section);
   const vibe = VIBES[treat];
+
+  /* CAMERA BEAT-PUNCH — every new line kicks the camera in a touch and it
+     springs back: choruses punch hardest. Motion value = no remount, no
+     re-render, works mid-animation with the dolly rig. */
+  const punch = useMotionValue(1);
+  useEffect(() => {
+    if (cur < 0) return;
+    punch.set(treat === "chorus" ? 1.045 : treat === "verse" ? 1.02 : 1.008);
+    const ctrl = mAnim(punch, 1, { type: "spring", stiffness: 110, damping: 15 });
+    return () => ctrl.stop();
+  }, [cur, treat, punch]);
   return (
     <div
       className="absolute inset-0 overflow-hidden bg-[#07050f]"
@@ -287,18 +306,22 @@ export default function LyricsMograph({
         />
       )}
 
+      {/* ---------- CAMERA BEAT-PUNCH layer (outer) + section dolly rig ---------- */}
+      <motion.div className="absolute inset-0" style={{ scale: punch }}>
       {/* ---------- CAMERA RIG — the whole scene rides a virtual camera that
              dollies per section (CAM_MOVE). Bottom HUD stays fixed outside. ---------- */}
       <motion.div
         className="absolute inset-0"
         animate={CAM_MOVE[treat]}
-        transition={{ duration: 8, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 6, ease: [0.22, 1, 0.36, 1] }}
       >
       {/* ---------- backdrop: cover art, blurred, slow cinematic drift ---------- */}
-      {/* outer layer = the drift; inner layer = adaptive lighting per section */}
+      {/* outer layer = the drift; inner layer = adaptive lighting per section.
+          OVERSIZED 25% each side so the camera's dolly + drift + beat-punch
+          can never pull a dark edge into frame. */}
       <motion.div
-        className="absolute -inset-[12%]"
-        animate={{ scale: [1.05, 1.15], x: [0, -44], y: [0, 26] }}
+        className="absolute -inset-[25%]"
+        animate={{ scale: [1.08, 1.2], x: [0, -70], y: [0, 44] }}
         transition={{ duration: 30, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }}
       >
         <motion.div
@@ -342,14 +365,6 @@ export default function LyricsMograph({
           opacity: { duration: (60 / bpm) * 11 / vibe.breath, repeat: Infinity, ease: "easeInOut" },
         }}
       />
-      <motion.div
-        className="absolute inset-0"
-        style={{ background: "linear-gradient(180deg, rgba(7,5,15,0.5), rgba(7,5,15,0.82) 65%, rgba(7,5,15,0.95))" }}
-        animate={{ opacity: vibe.scrim }}
-        transition={{ duration: 1.4, ease: "easeInOut" }}
-      />
-      <div className="vignette absolute inset-0" />
-
       {/* ---------- centre stack ---------- */}
       <div className="relative z-10 flex h-full flex-col items-center justify-center px-[7%] text-center">
         {/* section badge */}
@@ -377,8 +392,16 @@ export default function LyricsMograph({
             {line ? (
               <motion.div
                 key={cur}
-                className={`${TREAT_CLASS[treat]} text-ice`}
-                initial={{ y: 110, opacity:  0, scale: 0.93, filter: "blur(16px)" }}
+                className={`will-change-transform ${TREAT_FONT[treat].caps ? "uppercase" : ""}`}
+                style={{
+                  fontFamily: TREAT_FONT[treat].family,
+                  fontSize: fitSize(TREAT_FONT[treat].size, line.text),
+                  fontWeight: treat === "verse" ? 700 : 400,
+                  fontStyle: TREAT_FONT[treat].serif ? "italic" : undefined,
+                  letterSpacing: treat === "chorus" ? "0.015em" : undefined,
+                  lineHeight: treat === "bridge" ? 1.12 : 1.04,
+                }}
+                initial={{ y: 110, opacity: 0, scale: 0.93, filter: "blur(16px)" }}
                 animate={{ y: 0, opacity: 1, scale: 1, filter: "blur(0px)" }}
                 exit={{ y: -90, opacity: 0, scale: 0.97, filter: "blur(12px)" }}
                 transition={{ type: "spring", stiffness: 170, damping: 24, mass: 0.9 }}
@@ -419,10 +442,12 @@ export default function LyricsMograph({
                 <div className="font-mono text-[17px] font-medium tracking-[0.5em]" style={{ color: hex }}>
                   {header.kind}
                 </div>
-                <LetterStagger
-                  text={header.song}
-                  className="mt-5 font-display text-[170px] font-black uppercase leading-[0.9] text-ice"
-                />
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 176, lineHeight: 0.9 }}>
+                  <LetterStagger
+                    text={header.song}
+                    className="font-black uppercase text-ice"
+                  />
+                </div>
                 <motion.div
                   className="mx-auto mt-6 h-[3px] w-32"
                   style={{ background: hex }}
@@ -482,8 +507,8 @@ export default function LyricsMograph({
                 animate={{ opacity: 0.3, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.5 }}
-                className="font-body text-[32px] font-semibold text-ice"
-                style={{ filter: "blur(1.2px)" }}
+                className="font-body font-semibold text-ice"
+                style={{ filter: "blur(1.2px)", fontSize: fitSize(46, next.text) }}
               >
                 {next.text}
               </motion.div>
@@ -492,6 +517,31 @@ export default function LyricsMograph({
         </div>
       </div>
       </motion.div>
+      </motion.div>
+
+      {/* ---------- FIXED LIGHTING — scrim · vignette · line bloom.
+              Lives OUTSIDE the camera rig so it always covers the full
+              frame edge-to-edge, no matter where the camera moves. ---------- */}
+      <motion.div
+        className="pointer-events-none absolute inset-0"
+        style={{ background: "linear-gradient(180deg, rgba(7,5,15,0.5), rgba(7,5,15,0.82) 65%, rgba(7,5,15,0.95))" }}
+        animate={{ opacity: vibe.scrim }}
+        transition={{ duration: 1.4, ease: "easeInOut" }}
+      />
+      <div className="vignette pointer-events-none absolute inset-0" />
+      {line && (
+        <motion.div
+          key={`bloom-${cur}`}
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: `radial-gradient(${treat === "chorus" ? "72% 62%" : "56% 48%"} at 50% 46%, ${hex}38, transparent 70%)`,
+            mixBlendMode: "screen",
+          }}
+          initial={{ opacity: 0.9 }}
+          animate={{ opacity: treat === "chorus" ? 0.22 : 0 }}
+          transition={{ duration: treat === "chorus" ? 2.2 : 1.5, ease: "easeOut" }}
+        />
+      )}
 
       {/* ---------- bottom chrome: song info - clock - progress rail ---------- */}
       <div className="absolute inset-x-0 bottom-0 z-20">
