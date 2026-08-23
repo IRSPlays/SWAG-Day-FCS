@@ -52,6 +52,34 @@ export type ShowEvent =
   | (Base & { type: "cam-active"; camId: string | null })
   /* stage flagging that a camera's video is actually flowing */
   | (Base & { type: "cam-status"; camId: string; live: boolean })
+  /* camera display layout mode: bottom slide-up PIP, full screen, or hidden */
+  | (Base & { type: "cam-layout"; mode: "pip" | "fullscreen" | "hidden" })
+  /* TOURNAMENT LIVE SCORING — cohort points tally */
+  | (Base & {
+      type: "tournament-score";
+      cohortId: "sec1" | "sec2" | "sec3" | "sec4";
+      delta: number;
+      game?: string;
+    })
+  | (Base & {
+      type: "tournament-set";
+      scores: Record<"sec1" | "sec2" | "sec3" | "sec4", number>;
+    })
+  | (Base & { type: "tournament-reset" })
+  /* OUTRO BGM SYSTEM — background music playback & volume controls */
+  | (Base & {
+      type: "bgm-cmd";
+      action: "play" | "pause" | "track" | "volume";
+      track?: string;
+      volume?: number;
+    })
+  | (Base & {
+      type: "bgm-state";
+      playing: boolean;
+      track: string;
+      artist: string;
+      volume: number;
+    })
   /* LYRIC CONSOLE — the /lyrics operator page drives the lyric slide on the
      stage machine (manual tap-along, play/pause, jump to line). */
   | (Base & {

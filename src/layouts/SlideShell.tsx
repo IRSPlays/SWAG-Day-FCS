@@ -64,10 +64,12 @@ export default function SlideShell({
 }) {
   return (
     <div className={`relative h-full w-full overflow-hidden bg-court text-ice ${className}`}>
-      {children}
-      <div className="bg-noise pointer-events-none absolute inset-0 opacity-[0.06] mix-blend-overlay" />
-      <div className="vignette pointer-events-none absolute inset-0" />
-      <CornerTicks />
+      <div className="vignette pointer-events-none absolute inset-0 z-0" />
+      <div className="relative z-10 h-full w-full">{children}</div>
+      <div className="bg-noise pointer-events-none absolute inset-0 z-20 opacity-[0.06] mix-blend-overlay" />
+      <div className="pointer-events-none absolute inset-0 z-30">
+        <CornerTicks />
+      </div>
     </div>
   );
 }

@@ -1,12 +1,14 @@
 "use client";
 
-/* CameraWindow — the STAGE-side hub of the multi-camera WebRTC farm.
-   Every phone that goes live (cam-hello) gets an RTCPeerConnection answered
-   in the background, so ALL cameras stay hot-ready on the projector PC. The
-   Controller picks the broadcast source (cam-active); cutting is instant
-   because every camera's frames were already flowing. */
+/* CameraWindow — the STAGE-side hub of the multi-camera WebRTC broadcast system.
+   Supports smooth animated transitions:
+   - "hidden": slides down off the bottom of the stage screen
+   - "pip": bottom slide-up Picture-in-Picture window (540px 16:9)
+   - "fullscreen": full-bleed stage broadcast covering the whole projector
+   WebRTC connections stay permanently hot in the background for zero-latency cutting. */
 
 import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { getTransport } from "@/realtime/transport";
 import { newEventId, type ShowEvent, type ShowEventInput } from "@/realtime/types";
 import { useShow } from "@/store/show";
@@ -24,6 +26,7 @@ interface CamPeer {
 export default function CameraWindow() {
   const dispatch = useShow((s) => s.dispatch);
   const cameraOn = useShow((s) => s.cameraOn);
+  const camLayout = useShow((s) => s.camLayout ?? "pip");
   const activeCam = useShow((s) => s.activeCam);
   const cams = useShow((s) => s.cams);
   const arenaRef = useRef<HTMLDivElement>(null);
@@ -31,22 +34,33 @@ export default function CameraWindow() {
   const [res, setRes] = useState("");
   const [stats, setStats] = useState("");
 
-  /* live network diagnostics for the camera on stage — RTT, bitrate, fps,
-     jitter, packet loss. Shows exactly WHERE lag comes from:
-     high RTT/jitter/loss = Wi-Fi problem · low fps+bitrate = phone encoder
-     struggling · all green but delayed = (shouldn't happen now) buffering. */
+  /* live network diagnostics for the camera on stage */
   useEffect(() => {
-    if (!activeCam) { setStats(""); return; }
+    if (!activeCam) {
+      setStats("");
+      return;
+    }
     let lastBytes = 0;
     let lastTs = 0;
     const iv = setInterval(() => {
       const p = peersRef.current.get(activeCam);
-      if (!p?.pc) { setStats(""); return; }
+      if (!p?.pc) {
+        setStats("");
+        return;
+      }
       void p.pc.getStats().then((s) => {
-        let rtt = 0, jitter = 0, fps = 0, loss = 0, mbps = 0;
+        let rtt = 0,
+          jitter = 0,
+          fps = 0,
+          loss = 0,
+          mbps = 0;
         s.forEach((r) => {
           const rep = r as unknown as Record<string, unknown>;
-          if (rep.type === "candidate-pair" && rep.nominated && typeof rep.currentRoundTripTime === "number")
+          if (
+            rep.type === "candidate-pair" &&
+            rep.nominated &&
+            typeof rep.currentRoundTripTime === "number"
+          )
             rtt = Math.round(rep.currentRoundTripTime * 1000);
           if (rep.type === "inbound-rtp" && rep.kind === "video") {
             if (typeof rep.jitter === "number") jitter = Math.round(rep.jitter * 1000);
@@ -54,12 +68,15 @@ export default function CameraWindow() {
             if (typeof rep.packetsLost === "number") loss = rep.packetsLost;
             const b = typeof rep.bytesReceived === "number" ? rep.bytesReceived : 0;
             const t = typeof rep.timestamp === "number" ? rep.timestamp : 0;
-            if (lastTs && t > lastTs) mbps = +(((b - lastBytes) * 8) / ((t - lastTs) * 1000)).toFixed(1);
+            if (lastTs && t > lastTs)
+              mbps = +(((b - lastBytes) * 8) / ((t - lastTs) * 1000)).toFixed(1);
             lastBytes = b;
             lastTs = t;
           }
         });
-        setStats(`${rtt}ms · ${mbps} Mb/s · ${fps}fps · jit ${jitter}ms${loss > 0 ? ` · lost ${loss}` : ""}`);
+        setStats(
+          `${rtt}ms · ${mbps} Mb/s · ${fps}fps · jit ${jitter}ms${loss > 0 ? ` · lost ${loss}` : ""}`
+        );
       });
     }, 1000);
     return () => clearInterval(iv);
@@ -87,10 +104,6 @@ export default function CameraWindow() {
       arenaRef.current?.appendChild(video);
 
       pc.ontrack = (e) => {
-        /* LATENCY TUNING (receiver): the browser's jitter buffer can hold
-           SEVERAL SECONDS of video by default. 0 = "start playing frames the
-           instant they arrive" — the single biggest lag cut for live stage
-           monitoring. (Chrome/Edge; ignored elsewhere.) */
         try {
           (e.receiver as RTCRtpReceiver & { playoutDelayHint?: number }).playoutDelayHint = 0;
         } catch {
@@ -123,45 +136,45 @@ export default function CameraWindow() {
           break;
         }
         case "cam-bye": {
-          const p = peersRef.current.get(ev.camId);
+          const peer = peersRef.current.get(ev.camId);
+          peer?.pc?.close();
+          peer?.video?.remove();
           peersRef.current.delete(ev.camId);
-          p?.video?.remove();
-          p?.pc?.close();
+          dispatch({ type: "cam-bye", camId: ev.camId });
           break;
         }
         case "cam-offer": {
-          if (!useShow.getState().cams[ev.camId])
-            dispatch({ type: "cam-hello", camId: ev.camId });
           const pc = ensurePc(ev.camId);
-          const peer = peersRef.current.get(ev.camId)!;
-          /* dedupe: the phone heartbeats cam-request, don't re-gesture */
-          if (peer.answeredOffer === ev.sdp.sdp) break;
-          peer.answeredOffer = ev.sdp.sdp ?? null;
+          const peer = peersRef.current.get(ev.camId);
+          const offerStr = JSON.stringify(ev.sdp);
+          if (peer?.answeredOffer === offerStr) return;
           try {
-            await pc.setRemoteDescription(ev.sdp);
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            send({ type: "cam-answer", camId: ev.camId, sdp: answer });
-          } catch {
-            /* phone vanished mid-handshake */
+            await pc.setRemoteDescription(new RTCSessionDescription(ev.sdp));
+            const ans = await pc.createAnswer();
+            await pc.setLocalDescription(ans);
+            if (peer) peer.answeredOffer = offerStr;
+            send({ type: "cam-answer", camId: ev.camId, sdp: ans });
+          } catch (err) {
+            console.error("CameraWindow: offer failed", err);
           }
           break;
         }
         case "cam-ice": {
-          if (ev.from !== "phone") break;
-          const p = peersRef.current.get(ev.camId);
-          if (!p?.pc || p.pc.connectionState === "closed") break;
-          try {
-            await p.pc.addIceCandidate(ev.candidate);
-          } catch {
-            /* trickle race */
+          if (ev.from === "phone") {
+            const peer = peersRef.current.get(ev.camId);
+            if (peer?.pc && ev.candidate) {
+              try {
+                await peer.pc.addIceCandidate(new RTCIceCandidate(ev.candidate));
+              } catch {
+                /* candidate queue dropped */
+              }
+            }
           }
           break;
         }
       }
     });
 
-    /* invite live phones + keep the welcome mat out (phones answer once) */
     send({ type: "cam-request" });
     const hb = setInterval(() => send({ type: "cam-request" }), 4000);
 
@@ -177,8 +190,7 @@ export default function CameraWindow() {
     };
   }, [dispatch]);
 
-  /* cut the selected camera into the visible window - the frames were already
-     arriving in the background, so this is a pure CSS swap (~0ms) */
+  /* cut the selected camera into the visible window */
   useEffect(() => {
     const active = activeCam ? cams[activeCam] : null;
     peersRef.current.forEach((p, camId) => {
@@ -192,48 +204,116 @@ export default function CameraWindow() {
     });
   }, [activeCam, cams]);
 
-  const on = cameraOn && !!activeCam && !!cams[activeCam];
+  const on = cameraOn && !!activeCam && !!cams[activeCam] && camLayout !== "hidden";
   const waiting = on && !cams[activeCam!]?.live;
+  const isFullscreen = on && camLayout === "fullscreen";
 
-  /* ONE stable wrapper, always mounted — the per-camera <video> elements are
-     appended imperatively into the arena, so the DOM must never be swapped.
-     when no camera is cut to stage the wrapper is display:none; the hub keeps
-     answering phones and their frames keep flowing (desktop Chrome keeps
-     WebRTC tracks alive while hidden), so cutting in is still instant.
-     no dimmed "standby" box — the window simply isn't there. */
   return (
-    <div
-      className={`absolute right-8 top-8 z-40 w-[430px] border-4 border-mag bg-court shadow-[0_20px_60px_rgba(0,0,0,0.7)] ${on ? "" : "hidden"}`}
+    <motion.div
+      initial={false}
+      animate={
+        isFullscreen
+          ? {
+              opacity: 1,
+              scale: 1,
+              x: 0,
+              y: 0,
+              width: "100%",
+              height: "100%",
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 0,
+              borderRadius: 0,
+            }
+          : on
+          ? {
+              opacity: 1,
+              scale: 1,
+              x: 0,
+              y: 0,
+              width: "560px",
+              height: "auto",
+              top: "auto",
+              right: "32px",
+              bottom: "32px",
+              left: "auto",
+              borderRadius: "16px",
+            }
+          : {
+              opacity: 0,
+              scale: 0.9,
+              x: 0,
+              y: 120,
+              width: "560px",
+              height: "auto",
+              top: "auto",
+              right: "32px",
+              bottom: "32px",
+              left: "auto",
+              borderRadius: "16px",
+            }
+      }
+      transition={{ type: "spring", stiffness: 260, damping: 26, mass: 0.8 }}
+      className={`fixed z-50 overflow-hidden border-4 border-mag bg-court shadow-[0_30px_90px_rgba(0,0,0,0.85)] ${
+        on ? "pointer-events-auto" : "pointer-events-none"
+      }`}
     >
-      <div className="flex items-center justify-between bg-mag px-4 py-2">
-        <span className="flex items-center gap-2 font-body text-[14px] font-bold tracking-[0.3em] text-ice">
-          <span
-            className={`h-2.5 w-2.5 rounded-full ${waiting ? "bg-ice/50" : "animate-pulse bg-ice"}`}
-          />
-          STAGE CAM{activeCam && cams[activeCam] ? ` · ${cams[activeCam].name}` : ""}
-        </span>
-        <span className="font-body text-[13px] font-bold tracking-[0.25em] text-ice/85">
-          {waiting ? "CONNECTING" : res || "LIVE"}
-        </span>
-      </div>
-      {/* live link diagnostics — green when healthy, turns amber when laggy */}
-      {stats && !waiting && (
-        <div
-          className={`bg-black/85 px-4 py-1 font-body text-[11px] font-bold tracking-[0.18em] ${
-            /lost/.test(stats) ? "text-amber-400" : "text-ice/60"
-          }`}
-        >
-          LINK {stats}
-        </div>
-      )}
-      <div ref={arenaRef} className="relative aspect-video w-full overflow-hidden bg-black" />
-      {waiting && (
-        <div className="absolute inset-0 grid place-items-center bg-black/60">
-          <span className="font-body text-[12px] font-bold tracking-[0.3em] text-ice/70">
-            AWAITING STREAM…
+      {/* header bar */}
+      <div className="flex items-center justify-between bg-mag px-5 py-2.5">
+        <div className="flex items-center gap-3">
+          <span className="relative flex h-3 w-3">
+            <span
+              className={`absolute inline-flex h-full w-full rounded-full ${
+                waiting ? "bg-ice/40" : "animate-ping bg-ice opacity-75"
+              }`}
+            />
+            <span
+              className={`relative inline-flex h-3 w-3 rounded-full ${
+                waiting ? "bg-ice/50" : "bg-ice"
+              }`}
+            />
+          </span>
+          <span className="font-display text-lg font-black uppercase tracking-wider text-court">
+            FLOOR BROADCAST{activeCam && cams[activeCam] ? ` · ${cams[activeCam].name}` : ""}
           </span>
         </div>
+
+        <div className="flex items-center gap-3 font-mono text-[12px] font-bold text-court">
+          <span>{waiting ? "AWAITING STREAM" : res || "LIVE 1080P"}</span>
+          <span className="border border-court/30 px-2 py-0.5 uppercase tracking-widest">
+            {isFullscreen ? "FULL SCREEN" : "PIP"}
+          </span>
+        </div>
+      </div>
+
+      {/* live network stats banner */}
+      {stats && !waiting && !isFullscreen && (
+        <div className="bg-black/90 px-4 py-1 font-mono text-[11px] font-semibold text-ice/70">
+          LINK: {stats}
+        </div>
       )}
-    </div>
+
+      {/* video viewport arena */}
+      <div
+        ref={arenaRef}
+        className={`relative w-full overflow-hidden bg-black ${
+          isFullscreen ? "h-[calc(100%-48px)]" : "aspect-video"
+        }`}
+      />
+
+      {waiting && (
+        <div className="absolute inset-0 grid place-items-center bg-black/75">
+          <div className="text-center">
+            <div className="font-display text-3xl uppercase tracking-widest text-volt">
+              CONNECTING TO FLOOR CAM
+            </div>
+            <div className="mt-1 font-mono text-xs text-ice/50">
+              Open /camera on a mobile device and ensure camera permissions are active
+            </div>
+          </div>
+        </div>
+      )}
+    </motion.div>
   );
 }

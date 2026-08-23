@@ -229,8 +229,8 @@ export default function LyricTimeline({
       </div>
 
       {/* broadcast finish */}
-      <div className="bg-noise pointer-events-none absolute inset-0 opacity-[0.06] mix-blend-overlay" />
-      <div className="vignette pointer-events-none absolute inset-0" />
+      <div className="vignette pointer-events-none absolute inset-0 z-0" />
+      <div className="bg-noise pointer-events-none absolute inset-0 z-20 opacity-[0.06] mix-blend-overlay" />
     </div>
   );
 }

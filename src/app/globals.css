@@ -99,7 +99,8 @@
    each word of the active line starts dim and "lights up" as it is sung.
    the lit state is toggled directly from the rAF loop (no re-renders). */
 .lw {
-  color: color-mix(in srgb, var(--color-ice) 26%, transparent);
+  color: color-mix(in srgb, var(--color-ice) 48%, transparent);
+  text-shadow: 0 2px 22px rgba(5, 3, 12, 0.9), 0 0 8px rgba(5, 3, 12, 0.6);
   transition:
     color 0.32s ease,
     text-shadow 0.32s ease,
@@ -107,11 +108,9 @@
     transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .lw.on {
-  color: var(--color-ice);
+  color: #ffffff;
   transform: translateY(-0.03em) scale(1.05);
-  text-shadow:
-    0 0 26px var(--lw-glow, rgba(143, 107, 255, 0.55)),
-    0 0 72px var(--lw-glow, rgba(143, 107, 255, 0.3));
+  text-shadow: 0 4px 18px rgba(5, 3, 12, 0.9);
 }
 .lw.accent-on.on {
   color: var(--lw-accent, #8f6bff);

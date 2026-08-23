@@ -70,9 +70,11 @@ export default function ControllerPage() {
   const qrOn = useShow((s) => s.qrOn);
   const cameraOn = useShow((s) => s.cameraOn);
   const activeCam = useShow((s) => s.activeCam);
+  const camLayout = useShow((s) => s.camLayout ?? "pip");
   const cams = useShow((s) => s.cams);
   const pollOpen = useShow((s) => s.pollOpen);
   const surveyOpen = useShow((s) => s.surveyOpen);
+  const scores = useShow((s) => s.scores);
   const timerEndsAt = useShow((s) => s.timerEndsAt);
   const audio = useShow((s) => s.audio);
   const hidden = useShow((s) => s.hidden);
@@ -128,9 +130,10 @@ export default function ControllerPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [index, deckList.length, dispatch]);
 
-  const audienceUrl =
-    typeof window !== "undefined" ? `${window.location.origin}/audience` : "/audience";
-
+  const [audienceUrl, setAudienceUrl] = useState<string | null>(null);
+  useEffect(() => {
+    setAudienceUrl(`${window.location.origin}/audience`);
+  }, []);
   return (
     <div className="flex min-h-screen flex-col bg-court text-ice">
       {/* header */}
@@ -368,13 +371,40 @@ export default function ControllerPage() {
           </div>
 
           {/* cameras — multi-cam: every connected phone, pick the broadcast source */}
+          {/* cameras — multi-cam & layout switcher */}
           <div className="border-2 border-ice/10 bg-panel/60 p-4">
             <div className="flex items-center justify-between">
-              <span className="font-display text-2xl uppercase">Cameras</span>
+              <span className="font-display text-2xl uppercase">Live Cameras</span>
               <span className="font-body text-[11px] font-bold tracking-[0.2em] text-ice/40">
-                PHONE → STAGE · KEY V CYCLES
+                FLOOR CAMS → STAGE
               </span>
             </div>
+
+            {/* stage display layout mode switcher */}
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {[
+                { id: "pip", label: "PIP POPUP", desc: "Corner overlay" },
+                { id: "fullscreen", label: "FULLSCREEN", desc: "Full stage" },
+                { id: "hidden", label: "HIDE / OFF", desc: "Slide down" },
+              ].map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => {
+                    dispatch({ type: "cam-layout", mode: m.id as "pip" | "fullscreen" | "hidden" });
+                    if (m.id !== "hidden") dispatch({ type: "toggle", key: "cameraOn", on: true });
+                  }}
+                  className={`border-2 p-2 text-left transition-all ${
+                    camLayout === m.id && (cameraOn || m.id === "hidden")
+                      ? "border-mag bg-mag/20 text-ice"
+                      : "border-ice/15 bg-court/40 text-ice/60 hover:border-white/30"
+                  }`}
+                >
+                  <div className="font-mono text-[12px] font-bold">{m.label}</div>
+                  <div className="font-mono text-[10px] text-ice/40">{m.desc}</div>
+                </button>
+              ))}
+            </div>
+
             <div className="mt-3 space-y-2">
               {Object.keys(cams).length === 0 && (
                 <p className="font-body text-[13px] text-ice/50">
@@ -385,7 +415,7 @@ export default function ControllerPage() {
                 <div
                   key={id}
                   className={`flex items-center gap-3 border-2 px-3 py-2 transition-colors ${
-                    activeCam === id ? "border-mag bg-mag/10" : "border-ice/10"
+                    activeCam === id ? "border-volt bg-volt/10" : "border-ice/10"
                   }`}
                 >
                   <span
@@ -405,46 +435,99 @@ export default function ControllerPage() {
                     }
                     className={`${btn} ${
                       activeCam === id
-                        ? "border-mag bg-mag text-ice"
-                        : "border-volt text-volt hover:bg-volt hover:text-court"
+                        ? "border-volt bg-volt text-court"
+                        : "border-ice/30 text-ice hover:border-volt hover:text-volt"
                     }`}
                   >
-                    {activeCam === id ? "OFF AIR" : "ON STAGE"}
+                    {activeCam === id ? "CUT ON AIR" : "CUT TO"}
                   </button>
                 </div>
               ))}
             </div>
-            <div className="mt-3 flex items-center gap-3">
+          </div>
+
+          {/* tournament live scoreboard controller */}
+          <div className="border-2 border-ice/10 bg-panel/60 p-4">
+            <div className="flex items-center justify-between">
+              <span className="font-display text-2xl uppercase">Tournament Scores</span>
               <button
-                onClick={() => dispatch({ type: "toggle", key: "cameraOn", on: !cameraOn })}
-                className={`${btn} flex-1 ${
-                  cameraOn
-                    ? "border-mag bg-mag text-ice"
-                    : "border-ice/25 text-ice/60 hover:border-mag hover:text-mag"
-                }`}
+                onClick={() => dispatch({ type: "tournament-reset" })}
+                className="border border-white/20 px-2 py-0.5 font-mono text-[10px] font-bold text-ice/50 hover:border-mag hover:text-mag"
               >
-                STAGE CAM {cameraOn ? "ON" : "OFF"}
-              </button>
-              <button
-                onClick={() => dispatch({ type: "toggle", key: "cameraOn", on: true })}
-                className={`${btn} flex-1 ${
-                  activeCam ? "border-volt bg-volt text-court" : "border-ice/25 text-ice/50"
-                }`}
-                disabled={!activeCam}
-              >
-                CUT TO {activeCam ? (cams[activeCam]?.name ?? "CAM") : "—"}
+                RESET ALL
               </button>
             </div>
-            <p className="mt-2 font-body text-[11px] text-ice/40">
-              Every connected phone stays hot in the background — switching is instant, no
-              re-warming.
-            </p>
+
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              {[
+                { id: "sec1" as const, name: "SEC 1 (TITANS)", col: "#23dcff" },
+                { id: "sec2" as const, name: "SEC 2 (CYCLONES)", col: "#ff3da6" },
+                { id: "sec3" as const, name: "SEC 3 (VIPERS)", col: "#ffd23f" },
+                { id: "sec4" as const, name: "SEC 4 / STAFF (APEX)", col: "#8f6bff" },
+              ].map((c) => {
+                const pts = scores[c.id] ?? 0;
+                return (
+                  <div
+                    key={c.id}
+                    className="border-2 bg-court/50 p-3"
+                    style={{ borderColor: `${c.col}66` }}
+                  >
+                    <div className="flex items-baseline justify-between">
+                      <span className="font-mono text-[11px] font-bold" style={{ color: c.col }}>
+                        {c.name}
+                      </span>
+                      <span className="font-display text-2xl font-black tabular-nums text-ice">
+                        {pts}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex gap-1">
+                      <button
+                        onClick={() =>
+                          dispatch({ type: "tournament-score", cohortId: c.id, delta: 3 })
+                        }
+                        className="flex-1 border border-volt/40 bg-volt/10 py-1 font-mono text-[10px] font-bold text-volt hover:bg-volt hover:text-court"
+                      >
+                        +3
+                      </button>
+                      <button
+                        onClick={() =>
+                          dispatch({ type: "tournament-score", cohortId: c.id, delta: 2 })
+                        }
+                        className="flex-1 border border-mag/40 bg-mag/10 py-1 font-mono text-[10px] font-bold text-mag hover:bg-mag hover:text-court"
+                      >
+                        +2
+                      </button>
+                      <button
+                        onClick={() =>
+                          dispatch({ type: "tournament-score", cohortId: c.id, delta: 1 })
+                        }
+                        className="flex-1 border border-[#ffd23f]/40 bg-[#ffd23f]/10 py-1 font-mono text-[10px] font-bold text-[#ffd23f] hover:bg-[#ffd23f] hover:text-court"
+                      >
+                        +1
+                      </button>
+                      <button
+                        onClick={() =>
+                          dispatch({ type: "tournament-score", cohortId: c.id, delta: -1 })
+                        }
+                        className="border border-white/20 px-2 py-1 font-mono text-[10px] font-bold text-ice/40 hover:border-mag hover:text-mag"
+                      >
+                        -1
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* audience QR */}
           <div className="flex items-center gap-5 border-2 border-ice/10 bg-panel/60 p-4">
             <div className="bg-ice p-2">
-              <QRCodeSVG value={audienceUrl} size={130} bgColor="#f4f7ff" fgColor="#08060f" />
+              {audienceUrl ? (
+                <QRCodeSVG value={audienceUrl} size={130} bgColor="#f4f7ff" fgColor="#08060f" />
+              ) : (
+                <div className="h-[130px] w-[130px]" />
+              )}
             </div>
             <div>
               <div className="font-body text-[13px] font-bold tracking-[0.3em] text-volt">

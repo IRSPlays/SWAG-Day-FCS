@@ -39,6 +39,20 @@ export interface LyricUI {
   section?: string;
 }
 
+export interface TournamentScores {
+  sec1: number;
+  sec2: number;
+  sec3: number;
+  sec4: number;
+}
+
+export interface BgmState {
+  playing: boolean;
+  track: string;
+  artist: string;
+  volume: number;
+}
+
 interface ShowState {
   ready: boolean;
   transportKind: "local" | "server";
@@ -46,6 +60,7 @@ interface ShowState {
   dir: 1 | -1;
   blackout: boolean;
   cameraOn: boolean;
+  camLayout: "pip" | "fullscreen" | "hidden";
   qrOn: boolean;
   pollOpen: boolean;
   surveyOpen: boolean;
@@ -55,6 +70,10 @@ interface ShowState {
   activeCam: string | null;
   /* live lyric-slide snapshot for the /lyrics operator console */
   lyric: LyricUI | null;
+  /* tournament live scoring */
+  scores: TournamentScores;
+  /* outro background music */
+  bgm: BgmState;
   votes: Record<string, number>;
   reactionCounts: Record<string, number>;
   reactions: Reaction[];
@@ -67,12 +86,11 @@ interface ShowState {
   init: () => void;
   dispatch: (ev: ShowEventInput) => void;
 }
-
 const PERSIST_KEY = "swag-day-fs-v1";
 const seen = new Set<string>();
 
 function loadPersisted(): Partial<
-  Pick<ShowState, "overrides" | "metaOv" | "order" | "hidden" | "votes" | "surveys">
+  Pick<ShowState, "overrides" | "metaOv" | "order" | "hidden" | "votes" | "surveys" | "scores">
 > {
   if (typeof localStorage === "undefined") return {};
   try {
@@ -186,6 +204,35 @@ export const useShow = create<ShowState>((set, get) => {
       case "cam-active":
         set({ activeCam: ev.camId });
         break;
+      case "cam-layout":
+        set({ camLayout: ev.mode });
+        break;
+      case "tournament-score":
+        set((s) => ({
+          scores: {
+            ...s.scores,
+            [ev.cohortId]: Math.max(0, (s.scores[ev.cohortId] ?? 0) + ev.delta),
+          },
+        }));
+        break;
+      case "tournament-set":
+        set({ scores: ev.scores });
+        break;
+      case "tournament-reset":
+        set({ scores: { sec1: 0, sec2: 0, sec3: 0, sec4: 0 } });
+        break;
+      case "bgm-state":
+        set({
+          bgm: {
+            playing: ev.playing,
+            track: ev.track,
+            artist: ev.artist,
+            volume: ev.volume,
+          },
+        });
+        break;
+      case "bgm-cmd":
+        break;
       case "lyric-state":
         set({
           lyric: ev.slideId
@@ -233,6 +280,7 @@ export const useShow = create<ShowState>((set, get) => {
     dir: 1,
     blackout: false,
     cameraOn: false,
+    camLayout: "pip",
     qrOn: true,
     pollOpen: false,
     surveyOpen: false,
@@ -240,6 +288,8 @@ export const useShow = create<ShowState>((set, get) => {
     cams: {},
     activeCam: null,
     lyric: null,
+    scores: persisted.scores ?? { sec1: 0, sec2: 0, sec3: 0, sec4: 0 },
+    bgm: { playing: false, track: "Flashlight (Instrumental)", artist: "Jessie J", volume: 0.35 },
     votes: {},
     reactionCounts: {},
     reactions: [],
@@ -249,7 +299,6 @@ export const useShow = create<ShowState>((set, get) => {
     order: persisted.order ?? [],
     hidden: persisted.hidden ?? [],
     audio: { master: 0.9, music: 0.8, sfx: 0.9, duck: true, bed: null, fadeSeconds: 2 },
-
     init: () => {
       if (get().ready) return;
       const t = getTransport();

@@ -1,0 +1,445 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml" xmlns:itunes="http://music.apple.com/lyrics">
+  <body>
+    <div itunes:song-part="Intro">
+      <p begin="00:00:01.770" end="00:00:05.722">
+        <span begin="00:00:01.770" end="00:00:02.060">Ooh, </span>
+        <span begin="00:00:02.060" end="00:00:02.310">ooh, </span>
+        <span begin="00:00:02.310" end="00:00:02.593">ooh, </span>
+        <span begin="00:00:02.593" end="00:00:03.780">ooh, </span>
+        <span begin="00:00:03.780" end="00:00:05.722">ooh</span>
+      </p>
+      <p begin="00:00:08.889" end="00:00:11.950">
+        <span begin="00:00:08.889" end="00:00:09.226">Ooh, </span>
+        <span begin="00:00:09.226" end="00:00:09.493">ooh, </span>
+        <span begin="00:00:09.493" end="00:00:09.826">ooh, </span>
+        <span begin="00:00:09.826" end="00:00:11.950">ooh</span>
+      </p>
+    </div>
+    <div itunes:song-part="Verse">
+      <p begin="00:00:14.507" end="00:00:16.034">
+        <span begin="00:00:14.507" end="00:00:14.946">Stay </span>
+        <span begin="00:00:14.946" end="00:00:15.146">in </span>
+        <span begin="00:00:15.146" end="00:00:15.394">the </span>
+        <span begin="00:00:15.394" end="00:00:16.034">middle</span>
+      </p>
+      <p begin="00:00:16.268" end="00:00:17.837">
+        <span begin="00:00:16.268" end="00:00:16.699">Like </span>
+        <span begin="00:00:16.699" end="00:00:16.981">you </span>
+        <span begin="00:00:16.981" end="00:00:17.216">a </span>
+        <span begin="00:00:17.216" end="00:00:17.837">little</span>
+      </p>
+      <p begin="00:00:18.112" end="00:00:19.666">
+        <span begin="00:00:18.112" end="00:00:18.508">Don't </span>
+        <span begin="00:00:18.508" end="00:00:18.790">want </span>
+        <span begin="00:00:18.790" end="00:00:19.041">no </span>
+        <span begin="00:00:19.041" end="00:00:19.666">riddle</span>
+      </p>
+      <p begin="00:00:19.873" end="00:00:21.745">
+        <span begin="00:00:19.873" end="00:00:20.561">말해 </span>
+        <span begin="00:00:20.561" end="00:00:20.831">줘 </span>
+        <span begin="00:00:20.831" end="00:00:21.066">Say </span>
+        <span begin="00:00:21.066" end="00:00:21.447">it </span>
+        <span begin="00:00:21.447" end="00:00:21.745">back</span>
+      </p>
+      <p begin="00:00:21.765" end="00:00:23.230">
+        <span begin="00:00:21.765" end="00:00:22.105">Oh </span>
+        <span begin="00:00:22.105" end="00:00:22.388">say </span>
+        <span begin="00:00:22.388" end="00:00:22.588">it, </span>
+        <span begin="00:00:22.588" end="00:00:23.230">Ditto</span>
+      </p>
+      <p begin="00:00:23.508" end="00:00:25.309">
+        <span begin="00:00:23.508" end="00:00:24.414">아침은 </span>
+        <span begin="00:00:24.414" end="00:00:24.731">너무 </span>
+        <span begin="00:00:24.731" end="00:00:25.309">멀어</span>
+      </p>
+      <p begin="00:00:25.309" end="00:00:27.384">
+        <span begin="00:00:25.309" end="00:00:25.604">So </span>
+        <span begin="00:00:25.604" end="00:00:25.953">say </span>
+        <span begin="00:00:25.953" end="00:00:26.225">it, </span>
+        <span begin="00:00:26.225" end="00:00:27.384">Ditto</span>
+      </p>
+      <p begin="00:00:29.127" end="00:00:30.908">
+        <span begin="00:00:29.127" end="00:00:29.791">훌쩍 </span>
+        <span begin="00:00:29.791" end="00:00:29.983">커 </span>
+        <span begin="00:00:29.983" end="00:00:30.908">버렸어</span>
+      </p>
+      <p begin="00:00:30.908" end="00:00:32.623">
+        <span begin="00:00:30.908" end="00:00:31.604">함께한 </span>
+        <span begin="00:00:31.604" end="00:00:32.623">기억처럼</span>
+      </p>
+      <p begin="00:00:32.689" end="00:00:34.389">
+        <span begin="00:00:32.689" end="00:00:32.944">널 </span>
+        <span begin="00:00:32.944" end="00:00:33.309">보는 </span>
+        <span begin="00:00:33.309" end="00:00:33.509">내 </span>
+        <span begin="00:00:33.509" end="00:00:34.389">마음은</span>
+      </p>
+      <p begin="00:00:34.524" end="00:00:37.282">
+        <span begin="00:00:34.524" end="00:00:35.143">어느새 </span>
+        <span begin="00:00:35.143" end="00:00:35.543">여름 </span>
+        <span begin="00:00:35.543" end="00:00:36.026">지나 </span>
+        <span begin="00:00:36.026" end="00:00:37.282">가을</span>
+      </p>
+      <p begin="00:00:37.402" end="00:00:42.545">
+        <span begin="00:00:37.402" end="00:00:39.066">기다렸지 </span>
+        <span begin="00:00:39.159" end="00:00:39.375">All </span>
+        <span begin="00:00:39.375" end="00:00:39.658">this </span>
+        <span begin="00:00:39.658" end="00:00:42.545">time</span>
+      </p>
+      <p begin="00:00:43.420" end="00:00:45.156">
+        <span begin="00:00:43.420" end="00:00:43.790">Do </span>
+        <span begin="00:00:43.790" end="00:00:44.025">you </span>
+        <span begin="00:00:44.025" end="00:00:44.241">want </span>
+        <span begin="00:00:44.241" end="00:00:45.156">somebody?</span>
+      </p>
+      <p begin="00:00:45.202" end="00:00:47.000">
+        <span begin="00:00:45.202" end="00:00:45.620">Like </span>
+        <span begin="00:00:45.620" end="00:00:45.836">I </span>
+        <span begin="00:00:45.836" end="00:00:46.020">want </span>
+        <span begin="00:00:46.020" end="00:00:47.000">somebody</span>
+      </p>
+      <p begin="00:00:47.021" end="00:00:48.778">
+        <span begin="00:00:47.021" end="00:00:47.254">날 </span>
+        <span begin="00:00:47.254" end="00:00:47.654">보고 </span>
+        <span begin="00:00:47.654" end="00:00:48.778">웃었지만</span>
+      </p>
+      <p begin="00:00:48.806" end="00:00:51.651">
+        <span begin="00:00:48.806" end="00:00:49.236">Do </span>
+        <span begin="00:00:49.236" end="00:00:49.483">you </span>
+        <span begin="00:00:49.483" end="00:00:49.673">think </span>
+        <span begin="00:00:49.673" end="00:00:49.907">about </span>
+        <span begin="00:00:49.907" end="00:00:50.397">me </span>
+        <span begin="00:00:50.397" end="00:00:51.024">now? </span>
+        <span begin="00:00:51.024" end="00:00:51.651">Yeah</span>
+      </p>
+      <p begin="00:00:51.708" end="00:00:53.369">
+        <span begin="00:00:51.708" end="00:00:51.877">All </span>
+        <span begin="00:00:51.877" end="00:00:52.144">the </span>
+        <span begin="00:00:52.144" end="00:00:52.811">time, </span>
+        <span begin="00:00:52.811" end="00:00:53.369">yeah</span>
+      </p>
+      <p begin="00:00:53.544" end="00:00:55.512">
+        <span begin="00:00:53.544" end="00:00:53.695">All </span>
+        <span begin="00:00:53.695" end="00:00:53.943">the </span>
+        <span begin="00:00:53.943" end="00:00:55.512">time</span>
+      </p>
+    </div>
+    <div itunes:song-part="PreChorus">
+      <p begin="00:00:55.522" end="00:00:59.073">
+        <span begin="00:00:55.522" end="00:00:55.777">I </span>
+        <span begin="00:00:55.777" end="00:00:56.161">got </span>
+        <span begin="00:00:56.161" end="00:00:56.593">no </span>
+        <span begin="00:00:56.593" end="00:00:57.028">time </span>
+        <span begin="00:00:57.028" end="00:00:57.494">to </span>
+        <span begin="00:00:57.494" end="00:00:59.073">lose</span>
+      </p>
+      <p begin="00:00:59.142" end="00:01:02.657">
+        <span begin="00:00:59.142" end="00:00:59.360">내 </span>
+        <span begin="00:00:59.360" end="00:01:00.627">길었던 </span>
+        <span begin="00:01:00.627" end="00:01:02.657">하루</span>
+      </p>
+      <p begin="00:01:02.667" end="00:01:04.742">
+        <span begin="00:01:02.667" end="00:01:02.947">난 </span>
+        <span begin="00:01:02.947" end="00:01:03.779">보고 </span>
+        <span begin="00:01:03.779" end="00:01:04.742">싶어</span>
+      </p>
+      <p begin="00:01:04.742" end="00:01:09.182">
+        <span begin="00:01:04.742" end="00:01:05.030">Ra-</span>
+        <span begin="00:01:05.030" end="00:01:05.348">ta-</span>
+        <span begin="00:01:05.348" end="00:01:05.580">ta-</span>
+        <span begin="00:01:05.580" end="00:01:05.916">ta </span>
+        <span begin="00:01:05.916" end="00:01:06.447">울린 </span>
+        <span begin="00:01:06.447" end="00:01:07.363">심장 </span>
+      </p>
+      <p begin="00:01:09.820" end="00:01:13.420">
+        <span begin="00:01:09.820" end="00:01:10.083">I </span>
+        <span begin="00:01:10.083" end="00:01:10.518">got </span>
+        <span begin="00:01:10.518" end="00:01:11.451">nothing </span>
+        <span begin="00:01:11.451" end="00:01:11.833">to </span>
+        <span begin="00:01:11.833" end="00:01:13.420">lose</span>
+      </p>
+      <p begin="00:01:13.420" end="00:01:19.027">
+        <span begin="00:01:13.420" end="00:01:13.677">널 </span>
+        <span begin="00:01:13.677" end="00:01:16.165">좋아한다고 </span>
+        <span begin="00:01:16.165" end="00:01:16.882">Woah, </span>
+        <span begin="00:01:16.882" end="00:01:17.668">woah, </span>
+        <span begin="00:01:17.668" end="00:01:19.027">woah</span>
+      </p>
+      <p begin="00:01:19.027" end="00:01:23.521">
+        <span begin="00:01:19.027" end="00:01:19.379">Ra-</span>
+        <span begin="00:01:19.379" end="00:01:19.627">ta-</span>
+        <span begin="00:01:19.627" end="00:01:19.912">ta-</span>
+        <span begin="00:01:19.912" end="00:01:20.214">ta </span>
+        <span begin="00:01:20.214" end="00:01:20.861">울린 </span>
+        <span begin="00:01:20.861" end="00:01:21.664">심장 </span>
+      </p>
+      <p begin="00:01:24.223" end="00:01:26.248">
+        <span begin="00:01:24.223" end="00:01:24.388">But </span>
+        <span begin="00:01:24.388" end="00:01:24.804">I </span>
+        <span begin="00:01:24.804" end="00:01:25.255">don't </span>
+        <span begin="00:01:25.255" end="00:01:25.722">want </span>
+        <span begin="00:01:25.722" end="00:01:26.248">to</span>
+      </p>
+    </div>
+    <div itunes:song-part="Chorus">
+      <p begin="00:01:26.148" end="00:01:27.616">
+        <span begin="00:01:26.148" end="00:01:26.532">Stay </span>
+        <span begin="00:01:26.532" end="00:01:26.796">in </span>
+        <span begin="00:01:26.796" end="00:01:27.063">the </span>
+        <span begin="00:01:27.063" end="00:01:27.616">middle</span>
+      </p>
+      <p begin="00:01:28.003" end="00:01:29.456">
+        <span begin="00:01:28.003" end="00:01:28.282">Like </span>
+        <span begin="00:01:28.282" end="00:01:28.648">you </span>
+        <span begin="00:01:28.648" end="00:01:28.914">a </span>
+        <span begin="00:01:28.914" end="00:01:29.456">little</span>
+      </p>
+      <p begin="00:01:29.744" end="00:01:31.189">
+        <span begin="00:01:29.744" end="00:01:30.102">Don't </span>
+        <span begin="00:01:30.102" end="00:01:30.419">want </span>
+        <span begin="00:01:30.419" end="00:01:30.686">no </span>
+        <span begin="00:01:30.686" end="00:01:31.189">riddle</span>
+      </p>
+      <p begin="00:01:31.564" end="00:01:33.347">
+        <span begin="00:01:31.564" end="00:01:32.191">말해 </span>
+        <span begin="00:01:32.191" end="00:01:32.482">줘 </span>
+        <span begin="00:01:32.482" end="00:01:32.819">Say </span>
+        <span begin="00:01:32.819" end="00:01:33.121">it </span>
+        <span begin="00:01:33.121" end="00:01:33.347">back</span>
+      </p>
+      <p begin="00:01:33.347" end="00:01:34.719">
+        <span begin="00:01:33.347" end="00:01:33.721">Oh </span>
+        <span begin="00:01:33.721" end="00:01:33.987">say </span>
+        <span begin="00:01:33.987" end="00:01:34.286">it, </span>
+        <span begin="00:01:34.286" end="00:01:34.719">Ditto</span>
+      </p>
+      <p begin="00:01:35.135" end="00:01:36.921">
+        <span begin="00:01:35.135" end="00:01:36.093">아침은 </span>
+        <span begin="00:01:36.093" end="00:01:36.360">너무 </span>
+        <span begin="00:01:36.360" end="00:01:36.921">멀어</span>
+      </p>
+      <p begin="00:01:36.921" end="00:01:38.388">
+        <span begin="00:01:36.921" end="00:01:37.245">So </span>
+        <span begin="00:01:37.245" end="00:01:37.579">say </span>
+        <span begin="00:01:37.579" end="00:01:37.813">it, </span>
+        <span begin="00:01:37.813" end="00:01:38.388">Ditto</span>
+      </p>
+      <p begin="00:01:38.682" end="00:01:40.563">
+        <span begin="00:01:38.682" end="00:01:39.188">I </span>
+        <span begin="00:01:39.188" end="00:01:39.556">don't </span>
+        <span begin="00:01:39.556" end="00:01:40.038">want </span>
+        <span begin="00:01:40.038" end="00:01:40.563">to</span>
+      </p>
+      <p begin="00:01:40.563" end="00:01:41.948">
+        <span begin="00:01:40.563" end="00:01:40.866">Walk </span>
+        <span begin="00:01:40.866" end="00:01:41.149">in </span>
+        <span begin="00:01:41.149" end="00:01:41.399">this </span>
+        <span begin="00:01:41.399" end="00:01:41.948">미로</span>
+      </p>
+      <p begin="00:01:42.107" end="00:01:44.087">
+        <span begin="00:01:42.107" end="00:01:42.344">다 </span>
+        <span begin="00:01:42.344" end="00:01:42.978">아는 </span>
+        <span begin="00:01:42.978" end="00:01:43.226">건 </span>
+        <span begin="00:01:43.226" end="00:01:44.087">아니어도</span>
+      </p>
+      <p begin="00:01:44.107" end="00:01:45.504">
+        <span begin="00:01:44.107" end="00:01:45.010">바라던 </span>
+        <span begin="00:01:45.010" end="00:01:45.504">대로</span>
+      </p>
+      <p begin="00:01:45.903" end="00:01:47.621">
+        <span begin="00:01:45.903" end="00:01:46.555">말해 </span>
+        <span begin="00:01:46.555" end="00:01:46.785">줘 </span>
+        <span begin="00:01:46.785" end="00:01:47.118">Say </span>
+        <span begin="00:01:47.118" end="00:01:47.417">it </span>
+        <span begin="00:01:47.417" end="00:01:47.621">back</span>
+      </p>
+      <p begin="00:01:47.681" end="00:01:49.062">
+        <span begin="00:01:47.681" end="00:01:47.991">Oh </span>
+        <span begin="00:01:47.991" end="00:01:48.273">say </span>
+        <span begin="00:01:48.273" end="00:01:48.540">it, </span>
+        <span begin="00:01:48.540" end="00:01:49.062">Ditto</span>
+      </p>
+      <p begin="00:01:49.469" end="00:01:51.201">
+        <span begin="00:01:49.469" end="00:01:49.833">I </span>
+        <span begin="00:01:49.833" end="00:01:50.134">want </span>
+        <span begin="00:01:50.134" end="00:01:50.388">you </span>
+        <span begin="00:01:50.388" end="00:01:50.644">so, </span>
+        <span begin="00:01:50.644" end="00:01:51.034">want </span>
+        <span begin="00:01:51.034" end="00:01:51.201">you</span>
+      </p>
+      <p begin="00:01:51.201" end="00:01:53.343">
+        <span begin="00:01:51.201" end="00:01:51.584">So </span>
+        <span begin="00:01:51.584" end="00:01:51.933">say </span>
+        <span begin="00:01:51.933" end="00:01:52.168">it, </span>
+        <span begin="00:01:52.168" end="00:01:53.343">Ditto</span>
+      </p>
+    </div>
+    <div itunes:song-part="Verse">
+      <p begin="00:01:55.127" end="00:01:56.798">
+        <span begin="00:01:55.127" end="00:01:55.475">Not </span>
+        <span begin="00:01:55.475" end="00:01:55.758">just </span>
+        <span begin="00:01:55.758" end="00:01:56.798">anybody</span>
+      </p>
+      <p begin="00:01:56.886" end="00:01:58.642">
+        <span begin="00:01:56.886" end="00:01:57.551">너를 </span>
+        <span begin="00:01:57.551" end="00:01:58.642">상상했지</span>
+      </p>
+      <p begin="00:01:58.661" end="00:02:00.463">
+        <span begin="00:01:58.661" end="00:01:59.319">항상 </span>
+        <span begin="00:01:59.319" end="00:01:59.806">닿아 </span>
+        <span begin="00:01:59.806" end="00:02:00.463">있던</span>
+      </p>
+      <p begin="00:02:00.483" end="00:02:03.321">
+        <span begin="00:02:00.483" end="00:02:01.139">처음 </span>
+        <span begin="00:02:01.139" end="00:02:01.539">느낌 </span>
+        <span begin="00:02:01.539" end="00:02:02.709">그대로 </span>
+        <span begin="00:02:02.755" end="00:02:03.321">난</span>
+      </p>
+      <p begin="00:02:03.328" end="00:02:07.160">
+        <span begin="00:02:03.328" end="00:02:05.168">기다렸지 </span>
+        <span begin="00:02:05.168" end="00:02:05.384">All </span>
+        <span begin="00:02:05.384" end="00:02:05.635">this </span>
+        <span begin="00:02:05.635" end="00:02:07.160">time</span>
+      </p>
+    </div>
+    <div itunes:song-part="PreChorus">
+      <p begin="00:02:07.160" end="00:02:10.649">
+        <span begin="00:02:07.160" end="00:02:07.405">I </span>
+        <span begin="00:02:07.405" end="00:02:07.805">got </span>
+        <span begin="00:02:07.805" end="00:02:08.723">nothing </span>
+        <span begin="00:02:08.723" end="00:02:09.171">to </span>
+        <span begin="00:02:09.171" end="00:02:10.649">lose</span>
+      </p>
+      <p begin="00:02:10.689" end="00:02:16.220">
+        <span begin="00:02:10.689" end="00:02:10.994">널 </span>
+        <span begin="00:02:10.994" end="00:02:13.293">좋아한다고 </span>
+        <span begin="00:02:13.506" end="00:02:14.106">Woah, </span>
+        <span begin="00:02:14.106" end="00:02:15.010">woah, </span>
+        <span begin="00:02:15.010" end="00:02:16.220">woah</span>
+      </p>
+      <p begin="00:02:16.280" end="00:02:20.866">
+        <span begin="00:02:16.280" end="00:02:16.612">Ra-</span>
+        <span begin="00:02:16.612" end="00:02:16.898">ta-</span>
+        <span begin="00:02:16.898" end="00:02:17.146">ta-</span>
+        <span begin="00:02:17.146" end="00:02:17.612">ta </span>
+        <span begin="00:02:17.612" end="00:02:18.114">울린 </span>
+        <span begin="00:02:18.114" end="00:02:18.884">심장 </span>
+      </p>
+      <p begin="00:02:21.465" end="00:02:23.501">
+        <span begin="00:02:21.465" end="00:02:21.691">But </span>
+        <span begin="00:02:21.691" end="00:02:22.075">I </span>
+        <span begin="00:02:22.075" end="00:02:22.558">don't </span>
+        <span begin="00:02:22.558" end="00:02:23.009">want </span>
+        <span begin="00:02:23.009" end="00:02:23.501">to</span>
+      </p>
+    </div>
+    <div itunes:song-part="Chorus">
+      <p begin="00:02:23.401" end="00:02:24.965">
+        <span begin="00:02:23.401" end="00:02:23.823">Stay </span>
+        <span begin="00:02:23.823" end="00:02:24.106">in </span>
+        <span begin="00:02:24.106" end="00:02:24.372">the </span>
+        <span begin="00:02:24.372" end="00:02:24.965">middle</span>
+      </p>
+      <p begin="00:02:25.320" end="00:02:26.667">
+        <span begin="00:02:25.320" end="00:02:25.641">Like </span>
+        <span begin="00:02:25.641" end="00:02:25.940">you </span>
+        <span begin="00:02:25.940" end="00:02:26.174">a </span>
+        <span begin="00:02:26.174" end="00:02:26.667">little</span>
+      </p>
+      <p begin="00:02:27.049" end="00:02:28.650">
+        <span begin="00:02:27.049" end="00:02:27.425">Don't </span>
+        <span begin="00:02:27.425" end="00:02:27.727">want </span>
+        <span begin="00:02:27.727" end="00:02:27.991">no </span>
+        <span begin="00:02:27.991" end="00:02:28.650">riddle</span>
+      </p>
+      <p begin="00:02:28.882" end="00:02:30.689">
+        <span begin="00:02:28.882" end="00:02:29.547">말해 </span>
+        <span begin="00:02:29.547" end="00:02:29.780">줘 </span>
+        <span begin="00:02:29.780" end="00:02:30.081">Say </span>
+        <span begin="00:02:30.081" end="00:02:30.380">it </span>
+        <span begin="00:02:30.380" end="00:02:30.689">back</span>
+      </p>
+      <p begin="00:02:30.689" end="00:02:32.125">
+        <span begin="00:02:30.689" end="00:02:31.031">Oh </span>
+        <span begin="00:02:31.031" end="00:02:31.298">say </span>
+        <span begin="00:02:31.298" end="00:02:31.581">it, </span>
+        <span begin="00:02:31.581" end="00:02:32.125">Ditto</span>
+      </p>
+      <p begin="00:02:32.507" end="00:02:34.223">
+        <span begin="00:02:32.507" end="00:02:33.330">아침은 </span>
+        <span begin="00:02:33.330" end="00:02:33.679">너무 </span>
+        <span begin="00:02:33.679" end="00:02:34.223">멀어</span>
+      </p>
+      <p begin="00:02:34.223" end="00:02:35.814">
+        <span begin="00:02:34.223" end="00:02:34.539">So </span>
+        <span begin="00:02:34.539" end="00:02:34.875">say </span>
+        <span begin="00:02:34.875" end="00:02:35.142">it, </span>
+        <span begin="00:02:35.142" end="00:02:35.814">Ditto</span>
+      </p>
+      <p begin="00:02:36.009" end="00:02:37.822">
+        <span begin="00:02:36.009" end="00:02:36.507">I </span>
+        <span begin="00:02:36.507" end="00:02:36.891">don't </span>
+        <span begin="00:02:36.891" end="00:02:37.374">want </span>
+        <span begin="00:02:37.374" end="00:02:37.822">to</span>
+      </p>
+      <p begin="00:02:37.842" end="00:02:39.337">
+        <span begin="00:02:37.842" end="00:02:38.173">Walk </span>
+        <span begin="00:02:38.173" end="00:02:38.474">in </span>
+        <span begin="00:02:38.474" end="00:02:38.722">this </span>
+        <span begin="00:02:38.722" end="00:02:39.337">미로</span>
+      </p>
+      <p begin="00:02:39.370" end="00:02:41.462">
+        <span begin="00:02:39.370" end="00:02:39.618">다 </span>
+        <span begin="00:02:39.618" end="00:02:40.303">아는 </span>
+        <span begin="00:02:40.303" end="00:02:40.570">건 </span>
+        <span begin="00:02:40.570" end="00:02:41.462">아니어도</span>
+      </p>
+      <p begin="00:02:41.462" end="00:02:42.789">
+        <span begin="00:02:41.462" end="00:02:42.335">바라던 </span>
+        <span begin="00:02:42.335" end="00:02:42.789">대로</span>
+      </p>
+      <p begin="00:02:43.163" end="00:02:45.009">
+        <span begin="00:02:43.163" end="00:02:43.817">말해 </span>
+        <span begin="00:02:43.817" end="00:02:44.067">줘 </span>
+        <span begin="00:02:44.067" end="00:02:44.398">Say </span>
+        <span begin="00:02:44.398" end="00:02:44.766">it </span>
+        <span begin="00:02:44.766" end="00:02:45.009">back</span>
+      </p>
+      <p begin="00:02:45.009" end="00:02:46.381">
+        <span begin="00:02:45.009" end="00:02:45.291">Oh </span>
+        <span begin="00:02:45.291" end="00:02:45.659">say </span>
+        <span begin="00:02:45.659" end="00:02:45.907">it, </span>
+        <span begin="00:02:45.907" end="00:02:46.381">Ditto</span>
+      </p>
+      <p begin="00:02:46.769" end="00:02:48.564">
+        <span begin="00:02:46.769" end="00:02:47.117">I </span>
+        <span begin="00:02:47.117" end="00:02:47.435">want </span>
+        <span begin="00:02:47.435" end="00:02:47.685">you </span>
+        <span begin="00:02:47.685" end="00:02:47.933">so, </span>
+        <span begin="00:02:47.933" end="00:02:48.333">want </span>
+        <span begin="00:02:48.333" end="00:02:48.564">you</span>
+      </p>
+      <p begin="00:02:48.564" end="00:02:50.744">
+        <span begin="00:02:48.564" end="00:02:48.923">So </span>
+        <span begin="00:02:48.923" end="00:02:49.241">say </span>
+        <span begin="00:02:49.241" end="00:02:49.507">it, </span>
+        <span begin="00:02:49.507" end="00:02:50.744">Ditto</span>
+      </p>
+    </div>
+    <div itunes:song-part="Outro">
+      <p begin="00:02:53.703" end="00:02:57.922">
+        <span begin="00:02:53.703" end="00:02:54.037">Ooh, </span>
+        <span begin="00:02:54.037" end="00:02:54.403">ooh, </span>
+        <span begin="00:02:54.403" end="00:02:54.755">ooh, </span>
+        <span begin="00:02:54.755" end="00:02:55.757">ooh, </span>
+        <span begin="00:02:55.757" end="00:02:57.922">ooh</span>
+      </p>
+      <p begin="00:03:00.783" end="00:03:04.000">
+        <span begin="00:03:00.783" end="00:03:01.165">Ooh, </span>
+        <span begin="00:03:01.165" end="00:03:01.466">ooh, </span>
+        <span begin="00:03:01.466" end="00:03:01.850">ooh, </span>
+        <span begin="00:03:01.850" end="00:03:04.000">ooh</span>
+      </p>
+    </div>
+  </body>
+</tt>

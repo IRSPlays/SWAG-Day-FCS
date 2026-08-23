@@ -300,7 +300,7 @@ export default function AmLyricsStage({
           {/* song progress under the sleeve */}
           <div>
             <div className="h-[3px] w-full bg-[#f4f7ff14]">
-              <div ref={barRef} className="h-full w-0" style={{ background: hex, boxShadow: `0 0 12px ${hex}` }} />
+              <div ref={barRef} className="h-full w-0" style={{ background: hex }} />
             </div>
             <div className="mt-3 flex items-center justify-between text-[12px] font-bold tracking-[0.3em] text-[#f4f7ff66]">
               <span>NOW PERFORMING</span>

@@ -10,11 +10,10 @@
      BRIDGE = italic serif intimacy, VERSE = clean grotesk
    - next-line ghost, section badge, progress rail, clock
    Drive: the audio track is the clock (audio prop) OR the /lyrics operator
-   console taps lines along in MANUAL mode (lyric-cmd over the transport).
    Stage keys still work: P play/pause, arrows next/prev, R restart. */
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { AnimatePresence, animate as mAnim, motion, useMotionValue } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import type { LyricCue, SongHeader } from "@/slides/lyrics";
 import { LetterStagger } from "@/animations";
 import { getTransport } from "@/realtime/transport";
@@ -84,9 +83,9 @@ interface Vibe {
   scrim: number;     // dark veil opacity over the backdrop
 }
 const VIBES: Record<Treat, Vibe> = {
-  chorus: { brightness: 0.9, saturate: 1.65, glow: 2.4, breath: 2.6, scrim: 0.5 },
-  verse: { brightness: 0.56, saturate: 1.2, glow: 1.25, breath: 1.3, scrim: 0.76 },
-  bridge: { brightness: 0.24, saturate: 0.8, glow: 0.35, breath: 0.4, scrim: 0.94 },
+  chorus: { brightness: 0.88, saturate: 1.5, glow: 2.0, breath: 2.2, scrim: 0.45 },
+  verse: { brightness: 0.68, saturate: 1.25, glow: 1.3, breath: 1.3, scrim: 0.55 },
+  bridge: { brightness: 0.50, saturate: 1.0, glow: 0.7, breath: 0.6, scrim: 0.68 },
 };
 
 /* CAMERA MOVEMENT - a virtual camera dollies per section: pushes IN through
@@ -135,6 +134,7 @@ export default function LyricsMograph({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const clockRef = useRef<HTMLSpanElement>(null);
+  const shakeRef = useRef<HTMLDivElement>(null);
   const idxRef = useRef(-1);
   const sweepRef = useRef(0);                  /* seconds since line start (manual) */
   const pausedRef = useRef(false);
@@ -142,10 +142,16 @@ export default function LyricsMograph({
   const sectionRef = useRef("");
   const wordElsRef = useRef<(HTMLSpanElement | null)[]>([]);
   const lineWordsRef = useRef<LyricWord[]>([]);
+  const treatRef = useRef<Treat>("verse");
 
   useEffect(() => { lineWordsRef.current = lines[cur]?.words ?? []; }, [cur, lines]);
   /* ---------- shared command handler (keys + operator console) ---------- */
   const idxForTime = (t: number) => {
+    if (!lines.length) return -1;
+    const last = lines[lines.length - 1];
+    /* When the last line has finished and held for ~3.5s (song outro/ending),
+       bring back the intro title card so the performer credits close the performance! */
+    if (last && t >= last.end + 3.5) return -1;
     let i = -1;
     for (let k = 0; k < lines.length; k++) if (lines[k].t <= t) i = k;
     return i;
@@ -154,6 +160,7 @@ export default function LyricsMograph({
     const clamped = Math.max(-1, Math.min(lines.length - 1, i));
     idxRef.current = clamped;
     sweepRef.current = 0;
+    wordElsRef.current.forEach((el) => el?.classList.remove("on"));
     setCur(clamped);
   };
   const applyCmd = (action: string, line?: number) => {
@@ -162,8 +169,17 @@ export default function LyricsMograph({
       switch (action) {
         case "play": void a.play(); break;
         case "pause": a.pause(); break;
-        case "restart": a.currentTime = 0; void a.play(); break;
-        case "next": a.currentTime = lines[Math.min(lines.length - 1, idxForTime(a.currentTime) + 1)]?.t ?? 0; break;
+        case "restart": a.currentTime = 0; setLine(-1); void a.play(); break;
+        case "next": {
+          const curIdx = idxForTime(a.currentTime);
+          if (curIdx >= lines.length - 1) {
+            a.currentTime = (lines[lines.length - 1]?.end ?? total) + 4;
+            setLine(-1);
+          } else {
+            a.currentTime = lines[curIdx + 1]?.t ?? 0;
+          }
+          break;
+        }
         case "prev": a.currentTime = lines[Math.max(0, idxForTime(a.currentTime) - 1)]?.t ?? 0; break;
         case "goto": if (line != null && lines[line]) a.currentTime = lines[line].t; break;
       }
@@ -171,8 +187,15 @@ export default function LyricsMograph({
       switch (action) {
         case "play": pausedRef.current = false; setPlaying(true); break;
         case "pause": pausedRef.current = true; setPlaying(false); break;
-        case "restart": pausedRef.current = false; setPlaying(true); setLine(0); break;
-        case "next": setLine(idxRef.current + 1); break;
+        case "restart": pausedRef.current = false; setPlaying(true); setLine(-1); break;
+        case "next": {
+          if (idxRef.current >= lines.length - 1) {
+            setLine(-1);
+          } else {
+            setLine(idxRef.current + 1);
+          }
+          break;
+        }
         case "prev": setLine(idxRef.current - 1); break;
         case "goto": if (line != null) setLine(line); break;
       }
@@ -204,15 +227,20 @@ export default function LyricsMograph({
         setCur(idx);
       }
 
-      /* word-by-word lighting (direct DOM - no re-render).
-         MANUAL mode: no track timing exists, so the whole line is revealed
-         lit the moment it lands - the operator's tap IS the timing. */
+      /* word-by-word kinetic lighting (direct DOM - no re-render).
+         Track mode: locked to audio playback clock.
+         Manual mode: runs full automatic sing-along sweep as soon as the operator clicks NEXT! */
       const words = lineWordsRef.current;
       const els = wordElsRef.current;
+      const curLine = idxRef.current >= 0 ? lines[idxRef.current] : null;
+      const lineStart = curLine ? curLine.t : 0;
+
       for (let i = 0; i < words.length; i++) {
         const el = els[i];
         if (!el) continue;
-        if (!a || time >= words[i].t) el.classList.add("on");
+        const wordOffset = Math.max(0, words[i].t - lineStart);
+        const isWordLit = a ? time >= words[i].t : sweepRef.current >= wordOffset;
+        if (isWordLit) el.classList.add("on");
         else el.classList.remove("on");
       }
 
@@ -225,6 +253,23 @@ export default function LyricsMograph({
       if (sec !== sectionRef.current) {
         sectionRef.current = sec;
         setSection(sec);
+      }
+      /* buttery-smooth passive camera float (ultra-low frequency breathing drift) */
+      if (shakeRef.current) {
+        const tSec = now / 1000;
+        const treatCur = treatRef.current;
+        const intensity = treatCur === "chorus" ? 1.15 : treatCur === "bridge" ? 0.6 : 0.9;
+        const sx =
+          (Math.sin(tSec * 0.28) * 0.7 + Math.cos(tSec * 0.15 + 1.1) * 0.3) *
+          3.2 *
+          intensity;
+        const sy =
+          (Math.cos(tSec * 0.22 + 0.6) * 0.7 + Math.sin(tSec * 0.12 + 2.3) * 0.3) *
+          2.4 *
+          intensity;
+        const sRot = Math.sin(tSec * 0.18 + 0.9) * 0.10 * intensity;
+
+        shakeRef.current.style.transform = `translate3d(${sx.toFixed(2)}px, ${sy.toFixed(2)}px, 0) rotate(${sRot.toFixed(3)}deg)`;
       }
       raf = requestAnimationFrame(tick);
     };
@@ -278,21 +323,122 @@ export default function LyricsMograph({
   const next = cur + 1 < lines.length ? lines[cur + 1] : null;
   const treat = treatFor(line ? sectionAt(line.t, sectionsResolved) : section);
   const vibe = VIBES[treat];
-
-  /* CAMERA BEAT-PUNCH — every new line kicks the camera in a touch and it
-     springs back: choruses punch hardest. Motion value = no remount, no
-     re-render, works mid-animation with the dolly rig. */
-  const punch = useMotionValue(1);
   useEffect(() => {
-    if (cur < 0) return;
-    punch.set(treat === "chorus" ? 1.045 : treat === "verse" ? 1.02 : 1.008);
-    const ctrl = mAnim(punch, 1, { type: "spring", stiffness: 110, damping: 15 });
-    return () => ctrl.stop();
-  }, [cur, treat, punch]);
+    treatRef.current = treat;
+  }, [treat]);
+
+  /* SMOOTH CINEMATIC CAMERA — glides gracefully between musical sections (never jerks per line) */
+  const camTarget = useMemo(() => {
+    if (cur < 0) return { scale: 1.02, x: 0, y: 0, rotate: 0 };
+    switch (treat) {
+      case "chorus":
+        return { scale: 1.10, x: 0, y: -14, rotate: 0 };
+      case "bridge":
+        return { scale: 1.00, x: 12, y: 10, rotate: 0.12 };
+      case "verse":
+      default:
+        return { scale: 1.04, x: -16, y: 6, rotate: -0.15 };
+    }
+  }, [treat, cur < 0]);
+
+  const isEven = cur % 2 === 0;
+  const lineMotion = treat === "chorus"
+    ? {
+        initial: { y: 80, opacity: 0, scale: 0.92, filter: "blur(14px)" },
+        animate: { y: 0, opacity: 1, scale: 1, filter: "blur(0px)" },
+        exit: { y: -80, opacity: 0, scale: 0.95, filter: "blur(12px)" },
+        transition: { type: "spring" as const, stiffness: 220, damping: 24, mass: 0.8 },
+      }
+    : treat === "bridge"
+    ? {
+        initial: { y: 40, opacity: 0, scale: 0.98, filter: "blur(18px)" },
+        animate: { y: 0, opacity: 1, scale: 1, filter: "blur(0px)" },
+        exit: { y: -35, opacity: 0, filter: "blur(14px)" },
+        transition: { duration: 0.75, ease: [0.16, 1, 0.3, 1] as const },
+      }
+    : {
+        initial: { y: 65, opacity: 0, scale: 0.97, filter: "blur(10px)" },
+        animate: { y: 0, opacity: 1, scale: 1, filter: "blur(0px)" },
+        exit: { y: -55, opacity: 0, scale: 0.98, filter: "blur(8px)" },
+        transition: { type: "spring" as const, stiffness: 200, damping: 24 },
+      };
+
+  const getWordMotion = (i: number) => {
+    if (treat === "chorus") {
+      return {
+        initial: {
+          y: isEven ? "0.65em" : "-0.55em",
+          scale: 0.72,
+          opacity: 0,
+          rotateX: isEven ? 30 : -25,
+          rotateZ: i % 2 === 0 ? 3 : -3,
+          filter: "blur(8px)",
+        },
+        animate: {
+          y: "0em",
+          scale: 1,
+          opacity: 1,
+          rotateX: 0,
+          rotateZ: 0,
+          filter: "blur(0px)",
+        },
+        transition: {
+          type: "spring" as const,
+          stiffness: 480,
+          damping: 26,
+          delay: i * 0.038,
+        },
+      };
+    }
+    if (treat === "bridge") {
+      return {
+        initial: {
+          y: "0.45em",
+          scale: 0.92,
+          opacity: 0,
+          filter: "blur(18px)",
+        },
+        animate: {
+          y: "0em",
+          scale: 1,
+          opacity: 1,
+          filter: "blur(0px)",
+        },
+        transition: {
+          duration: 0.7,
+          ease: [0.16, 1, 0.3, 1] as const,
+          delay: i * 0.065,
+        },
+      };
+    }
+    return {
+      initial: {
+        y: "0.85em",
+        x: i % 2 === 0 ? -14 : 14,
+        opacity: 0,
+        skewX: isEven ? 5 : -5,
+        filter: "blur(10px)",
+      },
+      animate: {
+        y: "0em",
+        x: 0,
+        opacity: 1,
+        skewX: 0,
+        filter: "blur(0px)",
+      },
+      transition: {
+        type: "spring" as const,
+        stiffness: 380,
+        damping: 28,
+        delay: i * 0.045,
+      },
+    };
+  };
+
   return (
     <div
       className="absolute inset-0 overflow-hidden bg-[#07050f]"
-      style={{ "--lw-accent": hex, "--lw-glow": `${hex}80` } as CSSProperties}
+      style={{ "--lw-accent": hex } as CSSProperties}
     >
       {audio && (
         <audio
@@ -302,19 +448,23 @@ export default function LyricsMograph({
           className="hidden"
           onPlay={() => setPlaying(true)}
           onPause={() => setPlaying(false)}
+          onEnded={() => {
+            setPlaying(false);
+            setLine(-1);
+            if (audioRef.current) audioRef.current.currentTime = 0;
+          }}
           onLoadedMetadata={(e) => setAudioDur(e.currentTarget.duration || 0)}
         />
       )}
 
-      {/* ---------- CAMERA BEAT-PUNCH layer (outer) + section dolly rig ---------- */}
-      <motion.div className="absolute inset-0" style={{ scale: punch }}>
-      {/* ---------- CAMERA RIG — the whole scene rides a virtual camera that
-             dollies per section (CAM_MOVE). Bottom HUD stays fixed outside. ---------- */}
-      <motion.div
-        className="absolute inset-0"
-        animate={CAM_MOVE[treat]}
-        transition={{ duration: 6, ease: [0.22, 1, 0.36, 1] }}
-      >
+      {/* ---------- PASSIVE HANDHELD CAMERA DRIFT LAYER ---------- */}
+      <div ref={shakeRef} className="absolute inset-0 will-change-transform">
+        {/* ---------- CAMERA RIG — responsive virtual camera with dynamic section tracking ---------- */}
+        <motion.div
+          className="absolute inset-0"
+          animate={camTarget}
+          transition={{ duration: 5.5, ease: [0.25, 0.1, 0.25, 1] }}
+        >
       {/* ---------- backdrop: cover art, blurred, slow cinematic drift ---------- */}
       {/* outer layer = the drift; inner layer = adaptive lighting per section.
           OVERSIZED 25% each side so the camera's dolly + drift + beat-punch
@@ -336,35 +486,18 @@ export default function LyricsMograph({
           transition={{ duration: 1.4, ease: "easeInOut" }}
         />
       </motion.div>
-      {/* aurora - two accent blobs breathing at the song's BPM, flaring with the vibe */}
+      {/* ---------- BACKDROP SHADING & VIGNETTE (Behind the text) ---------- */}
+      {/* ---------- SOFT BACKDROP SHADING & VIGNETTE (Behind text, luminous & visible) ---------- */}
       <motion.div
-        className="absolute -left-[6%] top-[10%] h-[52vh] w-[52vh] rounded-full"
-        style={{ background: `radial-gradient(circle, ${hex}30, transparent 65%)`, filter: "blur(70px)", mixBlendMode: "screen" }}
-        animate={{
-          x: [0, 110, 0],
-          scale: [1, 1 + 0.12 * vibe.glow, 1],
-          opacity: [0.65 * vibe.glow, Math.min(1, vibe.glow), 0.65 * vibe.glow],
+        className="pointer-events-none absolute -inset-[50%] z-0"
+        style={{
+          background:
+            "radial-gradient(130% 130% at 50% 50%, rgba(7,5,15,0.35) 0%, rgba(7,5,15,0.65) 60%, rgba(7,5,15,0.85) 100%)",
         }}
-        transition={{
-          x: { duration: (60 / bpm) * 8, repeat: Infinity, ease: "easeInOut" },
-          scale: { duration: (60 / bpm) * 4 / vibe.breath, repeat: Infinity, ease: "easeInOut" },
-          opacity: { duration: (60 / bpm) * 8 / vibe.breath, repeat: Infinity, ease: "easeInOut" },
-        }}
+        animate={{ opacity: vibe.scrim }}
+        transition={{ duration: 1.4, ease: "easeInOut" }}
       />
-      <motion.div
-        className="absolute -right-[8%] bottom-[6%] h-[60vh] w-[60vh] rounded-full"
-        style={{ background: `radial-gradient(circle, ${hex}24, transparent 65%)`, filter: "blur(90px)", mixBlendMode: "screen" }}
-        animate={{
-          x: [0, -130, 0],
-          scale: [1, 1 + 0.1 * vibe.glow, 1],
-          opacity: [Math.min(1, vibe.glow), 0.55 * vibe.glow, Math.min(1, vibe.glow)],
-        }}
-        transition={{
-          x: { duration: (60 / bpm) * 11, repeat: Infinity, ease: "easeInOut" },
-          scale: { duration: (60 / bpm) * 5 / vibe.breath, repeat: Infinity, ease: "easeInOut" },
-          opacity: { duration: (60 / bpm) * 11 / vibe.breath, repeat: Infinity, ease: "easeInOut" },
-        }}
-      />
+      <div className="vignette pointer-events-none absolute -inset-[25%] z-0" />
       {/* ---------- centre stack ---------- */}
       <div className="relative z-10 flex h-full flex-col items-center justify-center px-[7%] text-center">
         {/* section badge */}
@@ -401,35 +534,27 @@ export default function LyricsMograph({
                   letterSpacing: treat === "chorus" ? "0.015em" : undefined,
                   lineHeight: treat === "bridge" ? 1.12 : 1.04,
                 }}
-                initial={{ y: 110, opacity: 0, scale: 0.93, filter: "blur(16px)" }}
-                animate={{ y: 0, opacity: 1, scale: 1, filter: "blur(0px)" }}
-                exit={{ y: -90, opacity: 0, scale: 0.97, filter: "blur(12px)" }}
-                transition={{ type: "spring", stiffness: 170, damping: 24, mass: 0.9 }}
+                initial={lineMotion.initial}
+                animate={lineMotion.animate}
+                exit={lineMotion.exit}
+                transition={lineMotion.transition}
               >
-                {line.words.map((w, i) => (
-                  <motion.span
-                    key={i}
-                    ref={(el) => { wordElsRef.current[i] = el; }}
-                    className={`lw inline-block will-change-transform ${treat === "chorus" ? "accent-on" : ""}`}
-                    style={{ marginRight: "0.26em" }}
-                    /* alternate entrance direction per line - even lines whip
-                       up, odd lines drop in; chorus springs are snappier */
-                    initial={{
-                      y: cur % 2 === 0 ? "0.55em" : "-0.55em",
-                      rotate: cur % 2 === 0 ? 2 : -2,
-                      opacity: 0,
-                    }}
-                    animate={{ y: 0, opacity: 1, rotate: 0 }}
-                    transition={{
-                      type: "spring",
-                      stiffness: treat === "chorus" ? 520 : 420,
-                      damping: 30,
-                      delay: i * (treat === "chorus" ? 0.04 : 0.05),
-                    }}
-                  >
-                    {w.text}
-                  </motion.span>
-                ))}
+                {line.words.map((w, i) => {
+                  const wm = getWordMotion(i);
+                  return (
+                    <motion.span
+                      key={i}
+                      ref={(el) => { wordElsRef.current[i] = el; }}
+                      className={`lw inline-block will-change-transform ${treat === "chorus" ? "accent-on" : ""}`}
+                      style={{ marginRight: "0.26em" }}
+                      initial={wm.initial}
+                      animate={wm.animate}
+                      transition={wm.transition}
+                    >
+                      {w.text}
+                    </motion.span>
+                  );
+                })}
               </motion.div>
             ) : (
               <motion.div
@@ -497,51 +622,10 @@ export default function LyricsMograph({
           </AnimatePresence>
         </div>
 
-        {/* next-line ghost */}
-        <div className="mt-4 flex h-16 items-center justify-center">
-          <AnimatePresence mode="wait">
-            {next && (
-              <motion.div
-                key={cur}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 0.3, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.5 }}
-                className="font-body font-semibold text-ice"
-                style={{ filter: "blur(1.2px)", fontSize: fitSize(46, next.text) }}
-              >
-                {next.text}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
       </div>
-      </motion.div>
-      </motion.div>
+        </motion.div>
+      </div>
 
-      {/* ---------- FIXED LIGHTING — scrim · vignette · line bloom.
-              Lives OUTSIDE the camera rig so it always covers the full
-              frame edge-to-edge, no matter where the camera moves. ---------- */}
-      <motion.div
-        className="pointer-events-none absolute inset-0"
-        style={{ background: "linear-gradient(180deg, rgba(7,5,15,0.5), rgba(7,5,15,0.82) 65%, rgba(7,5,15,0.95))" }}
-        animate={{ opacity: vibe.scrim }}
-        transition={{ duration: 1.4, ease: "easeInOut" }}
-      />
-      <div className="vignette pointer-events-none absolute inset-0" />
-      {line && (
-        <motion.div
-          key={`bloom-${cur}`}
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background: `radial-gradient(${treat === "chorus" ? "72% 62%" : "56% 48%"} at 50% 46%, ${hex}38, transparent 70%)`,
-            mixBlendMode: "screen",
-          }}
-          initial={{ opacity: 0.9 }}
-          animate={{ opacity: treat === "chorus" ? 0.22 : 0 }}
-          transition={{ duration: treat === "chorus" ? 2.2 : 1.5, ease: "easeOut" }}
-        />
-      )}
 
       {/* ---------- bottom chrome: song info - clock - progress rail ---------- */}
       <div className="absolute inset-x-0 bottom-0 z-20">
@@ -590,7 +674,7 @@ export default function LyricsMograph({
           </div>
         </div>
         <div className="h-[5px] w-full bg-white/[0.07]">
-          <div ref={barRef} className="h-full w-0" style={{ background: hex, boxShadow: `0 0 18px ${hex}` }} />
+          <div ref={barRef} className="h-full w-0" style={{ background: hex }} />
         </div>
       </div>
     </div>

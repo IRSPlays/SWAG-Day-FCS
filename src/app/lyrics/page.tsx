@@ -68,18 +68,42 @@ export default function LyricsConsole() {
         <>
           {/* current + next line - big and glanceable */}
           <div className="px-5 pb-4 pt-5">
-            <div className="text-[11px] font-bold tracking-[0.3em] text-ice/40">ON STAGE NOW</div>
+            <div className="flex items-center justify-between">
+              <div className="text-[11px] font-bold tracking-[0.3em] text-ice/40">ON STAGE NOW</div>
+              <div className="font-mono text-[12px] text-ice/50 tabular-nums">
+                {lyric.line >= 0 ? `LINE ${lyric.line + 1} / ${lyric.lines.length}` : "INTRO CARD"}
+              </div>
+            </div>
             <motion.div
               key={lyric.line}
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-2 min-h-[64px] text-[26px] font-extrabold leading-tight"
+              className="mt-2 min-h-[64px] rounded-xl border border-white/10 bg-white/[0.04] p-4 text-[24px] font-extrabold leading-tight text-volt"
             >
-              {lyric.line >= 0 ? lyric.lines[lyric.line] : "(intro - title card)"}
+              {lyric.line >= 0 ? lyric.lines[lyric.line] : "(Intro Screen — Title & Performer Credits)"}
             </motion.div>
-            <div className="mt-3 text-[11px] font-bold tracking-[0.3em] text-ice/40">NEXT UP</div>
-            <div className="mt-1 min-h-[40px] text-[17px] font-semibold leading-snug text-ice/45">
-              {lyric.line + 1 < lyric.lines.length ? lyric.lines[lyric.line + 1] : "(end of song)"}
+
+            {/* upcoming lyric queue (accessible exclusively to operator) */}
+            <div className="mt-4">
+              <div className="text-[11px] font-bold tracking-[0.3em] text-ice/40">NEXT UP (OPERATOR QUEUE)</div>
+              <div className="mt-1.5 flex flex-col gap-1.5">
+                {lyric.line + 1 < lyric.lines.length ? (
+                  <div className="rounded-lg border border-white/10 bg-white/[0.02] px-3.5 py-2 text-[16px] font-semibold text-ice/85">
+                    <span className="mr-2 font-mono text-[11px] text-ice/40">NEXT:</span>
+                    {lyric.lines[lyric.line + 1]}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-dashed border-white/10 px-3.5 py-2 text-[14px] text-ice/40">
+                    (End of lyrics — next tap returns to Title Screen)
+                  </div>
+                )}
+                {lyric.line + 2 < lyric.lines.length && (
+                  <div className="px-3.5 py-1 text-[13px] text-ice/40">
+                    <span className="mr-2 font-mono text-[10px] text-ice/30">THEN:</span>
+                    {lyric.lines[lyric.line + 2]}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -107,12 +131,24 @@ export default function LyricsConsole() {
                 NEXT &darr;
               </button>
             </div>
-            <button
-              onClick={() => cmd("restart")}
-              className="mt-3 h-11 w-full rounded-xl border border-white/10 text-sm font-bold tracking-[0.25em] text-ice/60 active:scale-95"
-            >
-              RESTART SONG
-            </button>
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                onClick={() => cmd("goto", -1)}
+                className={`h-11 flex-1 rounded-xl border text-xs font-bold tracking-[0.2em] active:scale-95 ${
+                  lyric.line < 0
+                    ? "border-volt bg-volt/20 text-volt"
+                    : "border-white/10 text-ice/60 hover:border-white/20"
+                }`}
+              >
+                TITLE CARD (INTRO)
+              </button>
+              <button
+                onClick={() => cmd("restart")}
+                className="h-11 flex-1 rounded-xl border border-white/10 text-xs font-bold tracking-[0.2em] text-ice/60 hover:border-white/20 active:scale-95"
+              >
+                RESTART TRACK
+              </button>
+            </div>
           </div>
 
           {/* full song list - tap any line to jump */}
