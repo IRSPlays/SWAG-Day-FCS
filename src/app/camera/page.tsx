@@ -14,13 +14,17 @@ import { getTransport } from "@/realtime/transport";
 import { newEventId, type ShowEvent, type ShowEventInput } from "@/realtime/types";
 
 const RTC_CFG: RTCConfiguration = {
-  iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+  iceServers: [
+    { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] },
+    { urls: ["stun:stun2.l.google.com:19302", "stun:stun3.l.google.com:19302"] },
+    { urls: ["stun:stun.cloudflare.com:3478"] },
+    { urls: ["stun:stun.services.mozilla.com"] },
+  ],
+  iceCandidatePoolSize: 10,
 };
 
-/* capture tiers - defaults to QHD and falls back gracefully on phones whose
-   cameras top out lower (ideal, not exact). Each tier sets a matching encoder
-   ceiling: without an explicit maxBitrate browsers silently crush high-res
-   streams to ~2.5 Mbps of mush. */
+/* capture tiers - defaults to 1080p and falls back gracefully on phones whose
+   cameras top out lower (ideal, not exact). */
 const QUALITIES = [
   { id: "720p", label: "720p", w: 1280, h: 720, mbps: 2.5 },
   { id: "1080p", label: "1080p", w: 1920, h: 1080, mbps: 5 },
@@ -32,12 +36,13 @@ const ZOOM_MAX = 5;
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
 export default function CameraPage() {
-  const [status, setStatus] = useState<"idle" | "live" | "error">("idle");
-  const [quality, setQuality] = useState<QualityId>("1440p");
-  const [facing, setFacing] = useState<"user" | "environment">("user");
+  const [status, setStatus] = useState<"idle" | "connecting" | "live" | "error">("idle");
+  const [quality, setQuality] = useState<QualityId>("1080p");
+  const [facing, setFacing] = useState<"user" | "environment">("environment");
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [resBadge, setResBadge] = useState("");
+  const [linkStatus, setLinkStatus] = useState("DISCONNECTED");
 
   const camIdRef = useRef("");
   const srcVideoRef = useRef<HTMLVideoElement>(null);
@@ -47,11 +52,13 @@ export default function CameraPage() {
   const cStreamRef = useRef<MediaStream | null>(null);
   const unsubRef = useRef<(() => void) | null>(null);
   const rafRef = useRef(0);
+  const pendingIceCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
+  const isNegotiatingRef = useRef(false);
 
   /* mirrors of zoom/pan for the rAF draw loop (no re-render churn) */
   const zoomRef = useRef(1);
   const panRef = useRef({ x: 0, y: 0 });
-  const facingRef = useRef<"user" | "environment">("user");
+  const facingRef = useRef<"user" | "environment">("environment");
 
   const touchRef = useRef<{ id: number; x: number; y: number }[]>([]);
   const gestureRef = useRef({ dist: 0, mid: { x: 0, y: 0 } });
@@ -66,9 +73,7 @@ export default function CameraPage() {
   };
 
   /* draw the live camera into the canvas with zoom + pan applied. the canvas
-     IS the streamed frame, so pinch/drag shows up verbatim on the stage.
-     the source is COVER-FIT (aspect preserved, overflow cropped) so the
-     output is always a clean 16:9 frame, never stretched or square. */
+     IS the streamed frame, so pinch/drag shows up verbatim on the stage. */
   const drawLoop = () => {
     const canvas = canvasRef.current;
     const video = srcVideoRef.current;
@@ -103,17 +108,19 @@ export default function CameraPage() {
     pcRef.current = null;
     streamRef.current = null;
     cStreamRef.current = null;
+    pendingIceCandidatesRef.current = [];
+    isNegotiatingRef.current = false;
     if (srcVideoRef.current) srcVideoRef.current.srcObject = null;
     camIdRef.current = "";
     setResBadge("");
     setStatus("idle");
+    setLinkStatus("DISCONNECTED");
   };
 
   const grabCamera = async (which: "user" | "environment", q: (typeof QUALITIES)[number]) => {
     const src = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: which,
-        /* ideal lets weak cameras drop a tier instead of failing */
         width: { ideal: q.w },
         height: { ideal: q.h },
         frameRate: { ideal: 30, max: 30 },
@@ -124,12 +131,10 @@ export default function CameraPage() {
     const v = srcVideoRef.current;
     if (!v) {
       src.getTracks().forEach((t) => t.stop());
-      throw new Error("no preview");
+      throw new Error("no preview video element");
     }
     v.srcObject = src;
-    /* wait for a REAL decoded frame — not just metadata. if the element still
-       holds the previous stream (flip), readyState is already >=2 and metadata
-       never fires again, which previously resized the canvas from stale data. */
+
     await new Promise<void>((resolve) => {
       const rvfc = (v as HTMLVideoElement & {
         requestVideoFrameCallback?: (cb: () => void) => number;
@@ -140,116 +145,176 @@ export default function CameraPage() {
         resolve();
       } else {
         v.onloadeddata = () => resolve();
-        setTimeout(resolve, 1500); /* belt & braces */
+        setTimeout(resolve, 1500);
       }
     });
-    /* the canvas is ALWAYS the tier's exact 16:9 size — the draw loop cover-
-       fits whatever the camera delivers, so odd camera aspects (4:3, portrait)
-       can never distort or square the streamed frame. */
+
     if (canvasRef.current) {
       canvasRef.current.width = q.w;
       canvasRef.current.height = q.h;
     }
     const caps = src.getVideoTracks()[0]?.getSettings();
-    setResBadge(`${caps?.width ?? q.w}×${caps?.height ?? q.h}${caps?.frameRate ? ` @ ${Math.round(caps.frameRate)}fps` : ""}`);
+    setResBadge(
+      `${caps?.width ?? q.w}×${caps?.height ?? q.h}${
+        caps?.frameRate ? ` @ ${Math.round(caps.frameRate)}fps` : ""
+      }`
+    );
+  };
+
+  const sendOffer = async (pc: RTCPeerConnection, camId: string) => {
+    if (isNegotiatingRef.current || pc.signalingState !== "stable") return;
+    try {
+      isNegotiatingRef.current = true;
+      const offer = await pc.createOffer({
+        offerToReceiveAudio: false,
+        offerToReceiveVideo: false,
+      });
+      await pc.setLocalDescription(offer);
+      send({ type: "cam-offer", camId, sdp: offer });
+    } catch (err) {
+      console.warn("createOffer error:", err);
+    } finally {
+      isNegotiatingRef.current = false;
+    }
   };
 
   const goLive = async (pick: QualityId = quality) => {
     try {
       stop();
-      camIdRef.current = `cam-${Math.random().toString(36).slice(2, 9)}`;
+      setStatus("connecting");
+      setLinkStatus("INITIALIZING...");
+      const camId = `cam-${Math.random().toString(36).slice(2, 9)}`;
+      camIdRef.current = camId;
       setQuality(pick);
       const q = QUALITIES.find((x) => x.id === pick)!;
 
       await grabCamera(facingRef.current, q);
       if (!canvasRef.current) throw new Error("no canvas");
 
-      /* the canvas (zoom/flip layer) is what we transmit */
-      const cStream = canvasRef.current.captureStream(30);
+      /* capture canvas stream, fallback to raw camera stream if unsupported */
+      let cStream: MediaStream;
+      try {
+        cStream = canvasRef.current.captureStream(30);
+        if (!cStream.getVideoTracks().length) throw new Error("no canvas track");
+      } catch {
+        cStream = streamRef.current!.clone();
+      }
       cStreamRef.current = cStream;
       const cTrack = cStream.getVideoTracks()[0];
 
       const pc = new RTCPeerConnection(RTC_CFG);
       pcRef.current = pc;
-      const t = getTransport();
+      pendingIceCandidatesRef.current = [];
+
       try {
-        /* addTransceiver pins the encoder budget BEFORE negotiation */
         pc.addTransceiver(cTrack, {
+          direction: "sendonly",
           streams: [cStream],
           sendEncodings: [{ maxBitrate: q.mbps * 1_000_000, maxFramerate: 30 }],
         });
       } catch {
-        cStream.getTracks().forEach((tr) => pc.addTrack(tr, cStream));
+        pc.addTrack(cTrack, cStream);
       }
+
       pc.onicecandidate = (e) => {
-        if (e.candidate)
-          send({ type: "cam-ice", from: "phone", camId: camIdRef.current, candidate: e.candidate.toJSON() });
+        if (e.candidate) {
+          send({
+            type: "cam-ice",
+            from: "phone",
+            camId: camIdRef.current,
+            candidate: e.candidate.toJSON(),
+          });
+        }
       };
 
-      /* LATENCY TUNING (sender): tell the encoder this is live motion and pin
-         a bitrate FLOOR — without one the encoder collapses under Wi-Fi load
-         and the stream turns to molasses. */
-      try { cTrack.contentHint = "motion"; } catch { /* older browsers */ }
-      const sender = pc.getSenders().find((s) => s.track?.kind === "video");
-      if (sender) {
-        try {
-          const p = sender.getParameters();
-          if (!p.encodings?.length) p.encodings = [{}];
-          /* minBitrate is in the spec but missing from TS's DOM lib — cast */
-          const enc = p.encodings[0] as RTCRtpEncodingParameters & { minBitrate?: number };
-          enc.maxBitrate = q.mbps * 1_000_000;
-          enc.minBitrate = Math.round(q.mbps * 600_000);
-          enc.networkPriority = "high";
-          p.degradationPreference = "maintain-framerate";
-          void sender.setParameters(p);
-        } catch {
-          /* param tuning unsupported - sendEncodings already set the budget */
+      pc.onconnectionstatechange = () => {
+        const s = pc.connectionState;
+        if (s === "connected") {
+          setStatus("live");
+          setLinkStatus("ON AIR · CONNECTED");
+        } else if (s === "connecting") {
+          setLinkStatus("CONNECTING TO STAGE...");
+        } else if (s === "disconnected" || s === "failed") {
+          setLinkStatus("RECONNECTING...");
+          void sendOffer(pc, camIdRef.current);
         }
-      }
+      };
 
+      pc.oniceconnectionstatechange = () => {
+        const is = pc.iceConnectionState;
+        if (is === "connected" || is === "completed") {
+          setStatus("live");
+          setLinkStatus("ON AIR · CONNECTED");
+        }
+      };
+
+      /* LATENCY TUNING */
+      try {
+        cTrack.contentHint = "motion";
+      } catch {}
+
+      const t = getTransport();
       unsubRef.current = t.subscribe(async (ev) => {
         if (ev.type === "cam-request") {
-          /* already up? ignore the heartbeat - stops the renegotiation churn */
-          if (pc.connectionState === "connected") return;
-          try {
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            send({ type: "cam-offer", camId: camIdRef.current, sdp: offer });
-          } catch {
-            /* pc closed */
+          if (pc.connectionState !== "connected" && pc.signalingState === "stable") {
+            await sendOffer(pc, camIdRef.current);
           }
         } else if (ev.type === "cam-answer") {
           if (ev.camId !== camIdRef.current) return;
-          try {
-            await pc.setRemoteDescription(ev.sdp);
-          } catch {
-            /* stale */
+          if (pc.signalingState === "have-local-offer") {
+            try {
+              await pc.setRemoteDescription(new RTCSessionDescription(ev.sdp));
+              /* flush pending ice candidates */
+              while (pendingIceCandidatesRef.current.length > 0) {
+                const cand = pendingIceCandidatesRef.current.shift();
+                if (cand) {
+                  try {
+                    await pc.addIceCandidate(new RTCIceCandidate(cand));
+                  } catch (e) {
+                    console.warn("addIceCandidate error:", e);
+                  }
+                }
+              }
+            } catch (err) {
+              console.warn("setRemoteDescription answer error:", err);
+            }
           }
         } else if (ev.type === "cam-ice" && ev.from === "stage") {
           if (ev.camId !== camIdRef.current) return;
-          try {
-            await pc.addIceCandidate(ev.candidate);
-          } catch {
-            /* race */
+          if (pc.remoteDescription && pc.remoteDescription.type) {
+            try {
+              await pc.addIceCandidate(new RTCIceCandidate(ev.candidate));
+            } catch (err) {
+              console.warn("addIceCandidate error:", err);
+            }
+          } else {
+            pendingIceCandidatesRef.current.push(ev.candidate);
           }
         }
       });
 
       rafRef.current = requestAnimationFrame(drawLoop);
-      send({ type: "cam-hello", camId: camIdRef.current });
-      setStatus("live");
-    } catch {
+
+      /* Announce camera and initiate WebRTC handshake immediately */
+      send({ type: "cam-hello", camId });
+      await sendOffer(pc, camId);
+      setStatus("connecting");
+      setLinkStatus("NEGOTIATING STAGE LINK...");
+    } catch (err) {
+      console.error("goLive failed:", err);
       stop();
       setStatus("error");
+      setLinkStatus("CAMERA PERMISSION ERROR");
     }
   };
 
   /* FLIP — restart the capture, leave the canvas stream + peer totally intact */
   const flip = async () => {
-    const next: "user" | "environment" = facingRef.current === "user" ? "environment" : "user";
+    const next: "user" | "environment" =
+      facingRef.current === "user" ? "environment" : "user";
     facingRef.current = next;
     setFacing(next);
-    if (status !== "live") return;
+    if (status !== "live" && status !== "connecting") return;
     try {
       const q = QUALITIES.find((x) => x.id === quality)!;
       streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -261,12 +326,17 @@ export default function CameraPage() {
       setPan({ x: 0, y: 0 });
     } catch {
       setStatus("error");
+      setLinkStatus("FLIP CAMERA FAILED");
     }
   };
 
   /* ---------------- pinch / drag / double-tap gestures ---------------- */
   const onTouchStart = (e: ReactTouchEvent) => {
-    touchRef.current = Array.from(e.touches).map((tn) => ({ id: tn.identifier, x: tn.clientX, y: tn.clientY }));
+    touchRef.current = Array.from(e.touches).map((tn) => ({
+      id: tn.identifier,
+      x: tn.clientX,
+      y: tn.clientY,
+    }));
     if (touchRef.current.length === 2) {
       const [a, b] = touchRef.current;
       gestureRef.current.dist = Math.hypot(b.x - a.x, b.y - a.y);
@@ -336,7 +406,9 @@ export default function CameraPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col gap-5 bg-court px-5 py-6 text-ice">
       <header>
-        <div className="font-body text-[11px] font-bold tracking-[0.4em] text-mag">STAGE CAM</div>
+        <div className="font-body text-[11px] font-bold tracking-[0.4em] text-mag">
+          STAGE BROADCAST CAM
+        </div>
         <h1 className="mt-1 font-display text-4xl uppercase leading-[0.9]">
           You&apos;re the <span className="text-volt">camera</span> now
         </h1>
@@ -349,12 +421,14 @@ export default function CameraPage() {
             key={q.id}
             onClick={() => {
               if (q.id !== quality) {
-                if (status === "live") void goLive(q.id);
+                if (status === "live" || status === "connecting") void goLive(q.id);
                 else setQuality(q.id);
               }
             }}
-            className={`border-2 px-3 py-2 font-body text-[11px] font-bold tracking-[0.18em] transition-colors ${
-              quality === q.id ? "border-volt bg-volt/10 text-volt" : "border-ice/20 text-ice/50"
+            className={`border px-3 py-1 font-mono text-xs font-bold tracking-wider uppercase transition-colors ${
+              quality === q.id
+                ? "border-volt bg-volt text-court"
+                : "border-ice/20 text-ice/60 hover:border-ice/40 hover:text-ice"
             }`}
           >
             {q.label}
@@ -362,98 +436,107 @@ export default function CameraPage() {
         ))}
         <button
           onClick={() => void flip()}
-          className={`ml-auto border-2 px-3 py-2 font-body text-[11px] font-bold tracking-[0.18em] ${
-            facing === "environment" ? "border-mag text-mag" : "border-ice/25 text-ice/70"
-          }`}
+          className="ml-auto border border-mag/40 bg-mag/10 px-3 py-1 font-mono text-xs font-bold tracking-wider text-mag uppercase transition-colors hover:bg-mag hover:text-court"
         >
-          ⇄ {facing === "user" ? "FRONT" : "REAR"}
+          FLIP ({facing === "user" ? "FRONT" : "REAR"})
         </button>
       </div>
 
-      {/* live preview — the canvas IS what the stage receives */}
+      {/* viewport */}
       <div
-        className="relative aspect-video w-full touch-none overflow-hidden border-2 border-ice/20 bg-black"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
-        onDoubleClickCapture={onDoubleTap}
+        onDoubleClick={onDoubleTap}
+        className="relative aspect-video w-full overflow-hidden border-2 border-ice/20 bg-black"
       >
-        {/* NOT display:none — hidden videos stop decoding frames on iOS Safari,
-            which kills the canvas capture. kept at 2px, ~invisible instead. */}
         <video
           ref={srcVideoRef}
-          autoPlay
           playsInline
           muted
-          className="pointer-events-none absolute left-0 top-0 h-[2px] w-[2px] opacity-[0.02]"
+          autoPlay
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-0"
         />
-        <canvas ref={canvasRef} className="h-full w-full object-contain" />
+        <canvas ref={canvasRef} className="h-full w-full object-cover" />
+
+        {/* HUD overlays */}
+        <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 font-mono text-[11px] font-bold tracking-wider">
+          <span
+            className={`h-2.5 w-2.5 rounded-full ${
+              status === "live"
+                ? "animate-ping bg-volt"
+                : status === "connecting"
+                ? "animate-pulse bg-[#ffd23f]"
+                : "bg-mag"
+            }`}
+          />
+          <span
+            className={
+              status === "live"
+                ? "text-volt"
+                : status === "connecting"
+                ? "text-[#ffd23f]"
+                : "text-mag"
+            }
+          >
+            {linkStatus}
+          </span>
+        </div>
+
+        {resBadge && (
+          <div className="pointer-events-none absolute bottom-3 left-3 bg-black/80 px-2 py-0.5 font-mono text-[10px] text-ice/70">
+            {resBadge}
+          </div>
+        )}
+
         {zoom > 1 && (
-          <div className="absolute right-2 top-2 border border-volt bg-black/70 px-2 py-1 font-body text-[11px] font-bold tracking-[0.2em] text-volt">
-            {zoom.toFixed(1)}×
+          <div className="pointer-events-none absolute bottom-3 right-3 bg-black/80 px-2 py-0.5 font-mono text-[10px] text-volt">
+            {zoom.toFixed(1)}x ZOOM
           </div>
         )}
       </div>
 
-      {/* zoom controls */}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => setZoomBoth(zoomRef.current - 0.5)}
-          className="h-10 w-10 border-2 border-ice/25 font-display text-lg text-ice/70"
-        >
-          −
-        </button>
-        <button
-          onClick={onDoubleTap}
-          className={`h-10 border-2 px-3 font-body text-[12px] font-bold tracking-[0.2em] ${
-            zoom > 1 ? "border-volt text-volt" : "border-ice/25 text-ice/50"
-          }`}
-        >
-          {zoom > 1 ? `${zoom.toFixed(1)}× ON` : "1× RESET"}
-        </button>
-        <button
-          onClick={() => setZoomBoth(zoomRef.current + 0.5)}
-          className="h-10 w-10 border-2 border-ice/25 font-display text-lg text-ice/70"
-        >
-          ＋
-        </button>
-        <span className="ml-auto font-body text-[10px] font-bold tracking-[0.2em] text-ice/40">
-          PINCH · DRAG · DOUBLE-TAP
-        </span>
+      {/* zoom presets */}
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-mono text-xs text-ice/50">ZOOM</span>
+        {[1, 1.5, 2, 3, 5].map((z) => (
+          <button
+            key={z}
+            onClick={() => setZoomBoth(z)}
+            className={`flex-1 border py-1.5 font-mono text-xs font-bold ${
+              zoom === z
+                ? "border-volt bg-volt text-court"
+                : "border-ice/20 text-ice/60 hover:border-ice/40 hover:text-ice"
+            }`}
+          >
+            {z}x
+          </button>
+        ))}
       </div>
 
-      {status !== "live" ? (
+      {/* go live / stop */}
+      {status === "idle" || status === "error" ? (
         <button
           onClick={() => void goLive()}
-          className="border-2 border-mag bg-mag py-4 font-display text-2xl uppercase text-ice"
+          className="border-2 border-volt bg-volt py-4 font-display text-2xl uppercase tracking-wider text-court transition-transform active:scale-[0.98]"
         >
-          ● Go live on stage
+          START BROADCAST
         </button>
       ) : (
         <button
           onClick={stop}
-          className="border-2 border-ice/30 py-4 font-display text-2xl uppercase text-ice/70"
+          className="border-2 border-mag bg-mag/20 py-4 font-display text-2xl uppercase tracking-wider text-mag transition-transform active:scale-[0.98]"
         >
-          ■ Stop
+          STOP BROADCAST
         </button>
       )}
 
-      {status === "error" && (
-        <p className="font-body text-sm text-mag">
-          Camera permission denied — allow camera access and retry.
-        </p>
-      )}
-      {status === "live" && (
-        <p className="font-body text-sm text-ice/60">
-          {resBadge ? (
-            <>
-              Streaming <span className="font-bold text-volt">{resBadge}</span> · {facing.toUpperCase()} CAM
-            </>
-          ) : (
-            "Streaming to the stage screen whenever the Tech Lead hits STAGE CAM."
-          )}
-        </p>
-      )}
+      {/* help text */}
+      <footer className="mt-auto border-t border-ice/10 pt-4 font-mono text-[11px] text-ice/40">
+        Pinch to zoom (1x–5x) · Drag to pan · Double-tap to reset.
+        <br />
+        Stream routes live to the stage screen via WebRTC.
+      </footer>
     </main>
   );
 }

@@ -3,23 +3,30 @@
 /* CameraWindow — the STAGE-side hub of the multi-camera WebRTC broadcast system.
    Supports smooth animated transitions:
    - "hidden": slides down off the bottom of the stage screen
-   - "pip": bottom slide-up Picture-in-Picture window (540px 16:9)
+   - "pip": bottom slide-up Picture-in-Picture window (560px 16:9)
    - "fullscreen": full-bleed stage broadcast covering the whole projector
    WebRTC connections stay permanently hot in the background for zero-latency cutting. */
 
 import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import { getTransport } from "@/realtime/transport";
 import { newEventId, type ShowEvent, type ShowEventInput } from "@/realtime/types";
 import { useShow } from "@/store/show";
 
 const RTC_CFG: RTCConfiguration = {
-  iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+  iceServers: [
+    { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] },
+    { urls: ["stun:stun2.l.google.com:19302", "stun:stun3.l.google.com:19302"] },
+    { urls: ["stun:stun.cloudflare.com:3478"] },
+    { urls: ["stun:stun.services.mozilla.com"] },
+  ],
+  iceCandidatePoolSize: 10,
 };
 
 interface CamPeer {
-  pc: RTCPeerConnection | null;
-  video: HTMLVideoElement | null;
+  pc: RTCPeerConnection;
+  video: HTMLVideoElement;
+  pendingCandidates: RTCIceCandidateInit[];
   answeredOffer: string | null;
 }
 
@@ -34,49 +41,40 @@ export default function CameraWindow() {
   const [res, setRes] = useState("");
   const [stats, setStats] = useState("");
 
-  /* live network diagnostics for the camera on stage */
+  /* live network diagnostics for active camera */
   useEffect(() => {
-    if (!activeCam) {
+    if (!activeCam || !cams[activeCam]) {
       setStats("");
       return;
     }
-    let lastBytes = 0;
-    let lastTs = 0;
     const iv = setInterval(() => {
       const p = peersRef.current.get(activeCam);
-      if (!p?.pc) {
+      if (!p?.pc || p.pc.connectionState !== "connected") {
         setStats("");
         return;
       }
       void p.pc.getStats().then((s) => {
-        let rtt = 0,
-          jitter = 0,
-          fps = 0,
-          loss = 0,
-          mbps = 0;
-        s.forEach((r) => {
-          const rep = r as unknown as Record<string, unknown>;
-          if (
-            rep.type === "candidate-pair" &&
-            rep.nominated &&
-            typeof rep.currentRoundTripTime === "number"
-          )
-            rtt = Math.round(rep.currentRoundTripTime * 1000);
-          if (rep.type === "inbound-rtp" && rep.kind === "video") {
-            if (typeof rep.jitter === "number") jitter = Math.round(rep.jitter * 1000);
-            if (typeof rep.framesPerSecond === "number") fps = Math.round(rep.framesPerSecond);
-            if (typeof rep.packetsLost === "number") loss = rep.packetsLost;
-            const b = typeof rep.bytesReceived === "number" ? rep.bytesReceived : 0;
-            const t = typeof rep.timestamp === "number" ? rep.timestamp : 0;
-            if (lastTs && t > lastTs)
-              mbps = +(((b - lastBytes) * 8) / ((t - lastTs) * 1000)).toFixed(1);
-            lastBytes = b;
-            lastTs = t;
+        let fps = 0;
+        let w = 0;
+        let h = 0;
+        let kbps = 0;
+        let rtt = 0;
+        s.forEach((report) => {
+          if (report.type === "inbound-rtp" && report.kind === "video") {
+            fps = report.framesPerSecond ?? fps;
+            w = report.frameWidth ?? w;
+            h = report.frameHeight ?? h;
+            if (report.bytesReceived && report.timestamp) {
+              kbps = Math.round((report.bytesReceived * 8) / 1000 / Math.max(1, (report.timestamp - (report.lastPacketReceivedTimestamp || report.timestamp - 1000)) / 1000));
+            }
+          } else if (report.type === "candidate-pair" && report.state === "succeeded") {
+            rtt = Math.round((report.currentRoundTripTime ?? 0) * 1000);
           }
         });
-        setStats(
-          `${rtt}ms · ${mbps} Mb/s · ${fps}fps · jit ${jitter}ms${loss > 0 ? ` · lost ${loss}` : ""}`
-        );
+        if (w > 0 && h > 0) setRes(`${w}×${h}${fps ? ` @ ${Math.round(fps)}fps` : ""}`);
+        if (rtt > 0 || kbps > 0) {
+          setStats(`${rtt ? `${rtt}ms RTT` : ""}${rtt && kbps ? " · " : ""}${kbps ? `${kbps} kbps` : ""}`);
+        }
       });
     }, 1000);
     return () => clearInterval(iv);
@@ -89,10 +87,19 @@ export default function CameraWindow() {
     const send = (e: ShowEventInput) =>
       t.publish({ ...e, id: newEventId(), ts: Date.now() } as ShowEvent);
 
-    const ensurePc = (camId: string): RTCPeerConnection => {
-      const peer = peersRef.current.get(camId);
-      if (peer?.pc && !["closed", "failed"].includes(peer.pc.connectionState))
-        return peer.pc;
+    const ensurePc = (camId: string): CamPeer => {
+      const existing = peersRef.current.get(camId);
+      if (existing && !["closed", "failed"].includes(existing.pc.connectionState)) {
+        if (arenaRef.current && !arenaRef.current.contains(existing.video)) {
+          arenaRef.current.appendChild(existing.video);
+        }
+        return existing;
+      }
+
+      if (existing) {
+        existing.pc.close();
+        existing.video.remove();
+      }
 
       const pc = new RTCPeerConnection(RTC_CFG);
       const video = document.createElement("video");
@@ -101,72 +108,120 @@ export default function CameraWindow() {
       video.muted = true;
       video.style.cssText =
         "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;background:#000;";
-      arenaRef.current?.appendChild(video);
+      if (arenaRef.current) arenaRef.current.appendChild(video);
+
+      const peer: CamPeer = {
+        pc,
+        video,
+        pendingCandidates: [],
+        answeredOffer: null,
+      };
 
       pc.ontrack = (e) => {
         try {
           (e.receiver as RTCRtpReceiver & { playoutDelayHint?: number }).playoutDelayHint = 0;
-        } catch {
-          /* unsupported */
-        }
-        video.srcObject = e.streams[0];
+        } catch {}
+        video.srcObject = e.streams[0] || new MediaStream([e.track]);
+        void video.play().catch(() => {});
         if (alive) dispatch({ type: "cam-status", camId, live: true });
       };
+
       pc.onicecandidate = (e) => {
-        if (e.candidate)
-          send({ type: "cam-ice", from: "stage", camId, candidate: e.candidate.toJSON() });
-      };
-      pc.onconnectionstatechange = () => {
-        if (alive && ["disconnected", "failed", "closed"].includes(pc.connectionState)) {
-          dispatch({ type: "cam-status", camId, live: false });
+        if (e.candidate) {
+          send({
+            type: "cam-ice",
+            from: "stage",
+            camId,
+            candidate: e.candidate.toJSON(),
+          });
         }
       };
-      peersRef.current.set(camId, { pc, video, answeredOffer: null });
-      return pc;
+
+      pc.onconnectionstatechange = () => {
+        if (alive) {
+          const s = pc.connectionState;
+          if (s === "connected") {
+            dispatch({ type: "cam-status", camId, live: true });
+          } else if (["disconnected", "failed", "closed"].includes(s)) {
+            dispatch({ type: "cam-status", camId, live: false });
+          }
+        }
+      };
+
+      peersRef.current.set(camId, peer);
+      return peer;
     };
 
     const unsub = t.subscribe(async (ev) => {
       switch (ev.type) {
         case "cam-hello": {
-          if (!useShow.getState().cams[ev.camId])
-            dispatch({ type: "cam-hello", camId: ev.camId });
-          if (!peersRef.current.has(ev.camId)) {
-            peersRef.current.set(ev.camId, { pc: null, video: null, answeredOffer: null });
-          }
+          dispatch({ type: "cam-hello", camId: ev.camId });
+          ensurePc(ev.camId);
+          send({ type: "cam-request" });
           break;
         }
         case "cam-bye": {
           const peer = peersRef.current.get(ev.camId);
-          peer?.pc?.close();
-          peer?.video?.remove();
+          peer?.pc.close();
+          peer?.video.remove();
           peersRef.current.delete(ev.camId);
           dispatch({ type: "cam-bye", camId: ev.camId });
           break;
         }
         case "cam-offer": {
-          const pc = ensurePc(ev.camId);
-          const peer = peersRef.current.get(ev.camId);
+          const peer = ensurePc(ev.camId);
+          const pc = peer.pc;
           const offerStr = JSON.stringify(ev.sdp);
-          if (peer?.answeredOffer === offerStr) return;
+          if (peer.answeredOffer === offerStr && pc.signalingState === "stable") return;
+
           try {
+            if (pc.signalingState !== "stable") {
+              /* reset peer if in wrong state */
+              const freshPeer = ensurePc(ev.camId);
+              await freshPeer.pc.setRemoteDescription(new RTCSessionDescription(ev.sdp));
+              while (freshPeer.pendingCandidates.length > 0) {
+                const c = freshPeer.pendingCandidates.shift();
+                if (c) await freshPeer.pc.addIceCandidate(new RTCIceCandidate(c));
+              }
+              const ans = await freshPeer.pc.createAnswer();
+              await freshPeer.pc.setLocalDescription(ans);
+              freshPeer.answeredOffer = offerStr;
+              send({ type: "cam-answer", camId: ev.camId, sdp: ans });
+              return;
+            }
+
             await pc.setRemoteDescription(new RTCSessionDescription(ev.sdp));
+            while (peer.pendingCandidates.length > 0) {
+              const c = peer.pendingCandidates.shift();
+              if (c) {
+                try {
+                  await pc.addIceCandidate(new RTCIceCandidate(c));
+                } catch (e) {
+                  console.warn("addIceCandidate stage error:", e);
+                }
+              }
+            }
             const ans = await pc.createAnswer();
             await pc.setLocalDescription(ans);
-            if (peer) peer.answeredOffer = offerStr;
+            peer.answeredOffer = offerStr;
             send({ type: "cam-answer", camId: ev.camId, sdp: ans });
           } catch (err) {
-            console.error("CameraWindow: offer failed", err);
+            console.error("CameraWindow offer processing error:", err);
           }
           break;
         }
         case "cam-ice": {
           if (ev.from === "phone") {
             const peer = peersRef.current.get(ev.camId);
-            if (peer?.pc && ev.candidate) {
-              try {
-                await peer.pc.addIceCandidate(new RTCIceCandidate(ev.candidate));
-              } catch {
-                /* candidate queue dropped */
+            if (peer) {
+              if (peer.pc.remoteDescription && peer.pc.remoteDescription.type) {
+                try {
+                  await peer.pc.addIceCandidate(new RTCIceCandidate(ev.candidate));
+                } catch (e) {
+                  console.warn("addIceCandidate stage error:", e);
+                }
+              } else {
+                peer.pendingCandidates.push(ev.candidate);
               }
             }
           }
@@ -175,6 +230,7 @@ export default function CameraWindow() {
       }
     });
 
+    /* poll phones to announce presence */
     send({ type: "cam-request" });
     const hb = setInterval(() => send({ type: "cam-request" }), 4000);
 
@@ -183,8 +239,8 @@ export default function CameraWindow() {
       clearInterval(hb);
       unsub();
       peersRef.current.forEach((p) => {
-        p.pc?.close();
-        p.video?.remove();
+        p.pc.close();
+        p.video.remove();
       });
       peersRef.current.clear();
     };
@@ -197,6 +253,9 @@ export default function CameraWindow() {
       if (!p.video) return;
       const on = camId === activeCam && !!active;
       p.video.style.display = on ? "block" : "none";
+      if (on && arenaRef.current && !arenaRef.current.contains(p.video)) {
+        arenaRef.current.appendChild(p.video);
+      }
       if (on) {
         if (p.video.videoWidth > 0) setRes(`${p.video.videoWidth}×${p.video.videoHeight}`);
         else setRes("");

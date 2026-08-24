@@ -94,7 +94,6 @@ function serverTransport(): Transport {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(ev),
-      keepalive: true,
     });
 
   return {
