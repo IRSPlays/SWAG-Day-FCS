@@ -87,15 +87,20 @@ function serverTransport(): Transport {
   };
 
   /* upstream: POST (carries WebRTC SDP/ICE payloads reliably).
-     ALWAYS posted, even before the SSE stream opens â€” a slow-opening stream
-     must never stall cross-device signaling. */
+     ALWAYS posted, even before the SSE stream opens — a slow-opening stream
+     must never stall cross-device signaling.
+     ORDERING: independent fetches have NO cross-request ordering guarantee
+     (HTTP/2 multiplexing), so a tiny cam-ice frame can beat its large
+     cam-offer to the server and get dropped by the receiver. Camera
+     signaling is therefore serialized through a promise chain; every other
+     event stays fire-and-forget for minimum latency. */
   const post = (ev: ShowEvent) =>
     fetch("/api/rt", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(ev),
     });
-
+  let camPostChain: Promise<void> = Promise.resolve();
   return {
     get kind() {
       return online ? "server" : "local";
@@ -103,15 +108,22 @@ function serverTransport(): Transport {
     publish: (ev) => {
       if (!online) {
         /* server link not confirmed yet: mirror locally right away (zero
-           latency for same-browser rehearsal) AND fire the POST regardless â€”
+           latency for same-browser rehearsal) AND fire the POST regardless —
            remote devices get it from the server even if our SSE is still
            handshaking. dedupe guarantees no double delivery. */
         channel?.postMessage(ev);
       }
-      void post(ev).catch(() => {
-        /* server truly unreachable -> same-browser delivery only */
-        channel?.postMessage(ev);
-      });
+      const doPost = async () => {
+        await post(ev).catch(() => {
+          /* server truly unreachable -> same-browser delivery only */
+          channel?.postMessage(ev);
+        });
+      };
+      if (typeof ev.type === "string" && ev.type.startsWith("cam-")) {
+        camPostChain = camPostChain.then(doPost, doPost);
+      } else {
+        void doPost();
+      }
     },
     subscribe: (cb) => {
       handlers.add(cb);

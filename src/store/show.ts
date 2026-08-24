@@ -202,7 +202,12 @@ export const useShow = create<ShowState>((set, get) => {
         });
         break;
       case "cam-active":
-        set({ activeCam: ev.camId });
+        set((s) => ({
+          activeCam: ev.camId,
+          /* cutting a camera in implies the broadcast system is on —
+             otherwise the stage window stays invisible even when streaming */
+          cameraOn: ev.camId ? true : s.cameraOn,
+        }));
         break;
       case "cam-layout":
         set({ camLayout: ev.mode });
