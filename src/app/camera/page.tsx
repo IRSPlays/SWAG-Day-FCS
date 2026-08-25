@@ -88,6 +88,13 @@ export default function CameraPage() {
 
   const patchDiag = (p: Partial<Diag>) => setDiag((d) => ({ ...d, ...p }));
 
+  /* live link status - SERVER the moment WS or the HTTP fallback connects */
+  useEffect(() => {
+    const t = getTransport();
+    patchDiag({ link: t.kind });
+    return t.onStatus((kind) => patchDiag({ link: kind }));
+  }, []);
+
   const setZoomBoth = (v: number) => {
     const z = clamp(v, 1, ZOOM_MAX);
     zoomRef.current = z;
@@ -266,7 +273,6 @@ export default function CameraPage() {
       buildPc();
 
       const t = getTransport();
-      patchDiag({ link: t.kind });
       unsubRef.current = t.subscribe(async (ev) => {
         const pc = pcRef.current;
         if (!pc) return;

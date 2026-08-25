@@ -51,5 +51,6 @@ Keyboard on a lyric slide: P play/pause track · ↓/↑ next/prev line · R res
 ## Going cross-device (Railway — our own server)
 
 1. Deploy to Railway (framework: Node, start command `npm run build && npm start` — `npm start` runs `server.js`, one instance).
-2. Nothing else to configure: realtime runs on our own WebSocket hub at `/api/ws` (same server as the app) — deck cues, lyric commands and WebRTC camera signaling all flow through it. No third-party keys needed.
-3. If the server is unreachable the system still works — synced across tabs of one browser via BroadcastChannel.
+2. The start command MUST run `server.js` (i.e. `npm start`). A bare `next start` serves the pages but silently kills the realtime hub — cameras will show `LINK: LOCAL` forever.
+3. Realtime runs on our own WebSocket hub at `/api/ws` (same server as the app). Networks that block WebSocket upgrades fall back automatically to HTTP polling (`/api/ws-send` + `/api/ws-poll`) — if the page loads, the show syncs. No third-party keys needed.
+4. If the server is unreachable entirely, the system still works — synced across tabs of one browser via BroadcastChannel.

@@ -1,12 +1,16 @@
-/* Transport layer - OUR OWN WEBSOCKET HUB (server.js), no third-party service.
-   - Primary: native WebSocket at /api/ws on this deployment. One server
-     process owns every client (stage PC, controller PC, phones) and fans
-     every event out instantly. No SSE buffering, no polling, no
-     shared-module-state pitfalls.
-   - Fallback: BroadcastChannel (same browser) when the server is
-     unreachable - handy for rehearsing on one laptop with no network.
-   Publishes made while the socket is down are queued and flushed on reopen.
-   The rest of the app never knows which path delivered. */
+/* Transport layer - OUR OWN hub (server.js on Railway), no third-party service.
+
+ Dual-path, automatic:
+ - Primary: native WebSocket at /api/ws - instant fan-out both ways.
+ - Fallback: plain HTTP short-poll (/api/ws-send + /api/ws-poll, 400 ms)
+   for proxies/networks that pass HTTP but kill WebSocket upgrades.
+   The page itself loads over HTTP, so wherever the page renders, the
+   fallback reaches the hub. Handoff is gap-free: WS frames carry a
+   sequence number (__seq) the poller resumes from.
+ - Offline rehearsal: BroadcastChannel mirrors same-browser traffic;
+   event-id dedupe collapses every double delivery.
+
+ The rest of the app never knows which path delivered. */
 
 import type { ShowEvent } from "./types";
 
@@ -14,7 +18,7 @@ export interface Transport {
   kind: "local" | "server";
   publish: (ev: ShowEvent) => void;
   subscribe: (cb: (ev: ShowEvent) => void) => () => void;
-  /** live link status â€” fires whenever the server link opens or drops */
+  /** live link status - fires whenever the server link opens or drops */
   onStatus: (cb: (kind: "local" | "server") => void) => () => void;
 }
 
@@ -48,7 +52,7 @@ function wsTransport(): Transport {
   };
 
   /* event-id dedupe: an event can arrive twice (socket echo + offline
-     BroadcastChannel mirror) - deliver each exactly once */
+     BroadcastChannel mirror, or WS + poll overlap) - deliver exactly once */
   const seenIds = new Set<string>();
   const deliver = (ev: ShowEvent) => {
     if (!ev.id || seenIds.has(ev.id)) return;
@@ -62,85 +66,155 @@ function wsTransport(): Transport {
     handlers.forEach((h) => h(ev));
   };
 
-  /* same-browser backup for when the server can't be reached */
+  /* same-browser fallback when the server can't be reached at all */
   const channel =
-    typeof BroadcastChannel !== "undefined"
-      ? new BroadcastChannel("swag-day-fs-show")
-      : null;
-  channel?.addEventListener("message", (e) => {
-    deliver(e.data as ShowEvent);
-  });
+    typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("swag-day-fs-show") : null;
+  if (channel) {
+    channel.onmessage = (e) => {
+      deliver(e.data as ShowEvent);
+    };
+  }
 
+  type Mode = "deciding" | "ws" | "http";
+  let mode: Mode = "deciding";
   let socket: WebSocket | null = null;
-  let retry = 0;
+  let wsRetry = 0;
+  let failTimer: ReturnType<typeof setTimeout> | null = null;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  let pollTimer: ReturnType<typeof setInterval> | null = null;
+  let pollCursor: number | null = null; // null = not synced yet (head first, no history replay)
+  let lastWsSeq = 0; // from __seq on WS frames - gap-free WS -> HTTP handoff
   const outbound: ShowEvent[] = [];
 
-  const connect = () => {
-    if (
-      socket &&
-      (socket.readyState === WebSocket.OPEN ||
-        socket.readyState === WebSocket.CONNECTING)
-    ) {
+  const enqueueOutbound = (ev: ShowEvent) => {
+    outbound.push(ev);
+    if (outbound.length > 200) outbound.shift(); // bounded
+  };
+
+  const sendHttp = (ev: ShowEvent) => {
+    void fetch("/api/ws-send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(ev),
+      keepalive: true,
+    }).catch(() => {});
+  };
+
+  const sendActive = (ev: ShowEvent) => {
+    if (mode === "ws" && socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify(ev));
       return;
     }
+    sendHttp(ev);
+  };
+
+  const flushOutbound = () => {
+    const queued = outbound.splice(0);
+    for (const ev of queued) sendActive(ev);
+  };
+
+  const pollTick = async () => {
+    try {
+      const q = pollCursor === null ? "head" : String(pollCursor);
+      const res = await fetch(`/api/ws-poll?since=${q}`, { cache: "no-store" });
+      const data = (await res.json()) as { events?: ShowEvent[]; seq?: number };
+      if (typeof data.seq === "number") pollCursor = data.seq;
+      for (const ev of data.events ?? []) deliver(ev);
+      setStatus(true);
+    } catch {
+      /* server unreachable this tick - keep polling */
+    }
+  };
+
+  const goHttp = (fromSeq: number | null) => {
+    if (mode === "http") return;
+    mode = "http";
+    if (pollCursor === null) pollCursor = fromSeq; // null -> head-sync (no replay)
+    if (!pollTimer) {
+      pollTimer = setInterval(() => void pollTick(), 400);
+      void pollTick();
+    }
+    setStatus(true);
+    flushOutbound();
+  };
+
+  const openWs = () => {
+    if (
+      socket &&
+      (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)
+    )
+      return;
     const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
     socket = new WebSocket(`${proto}//${window.location.host}/api/ws`);
 
+    /* decision window: handshake not done in 4s -> this path probably
+       kills upgrades; fall back to HTTP polling */
+    failTimer = setTimeout(() => {
+      try {
+        socket?.close();
+      } catch {}
+    }, 4000);
+
     socket.onopen = () => {
-      retry = 0;
+      if (failTimer) clearTimeout(failTimer);
+      wsRetry = 0;
+      mode = "ws";
       setStatus(true);
-      /* flush everything queued while the link was down */
-      for (const ev of outbound.splice(0)) {
-        try {
-          socket?.send(JSON.stringify(ev));
-        } catch {
-          /* socket died again - reconnect loop takes over */
-        }
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
       }
+      flushOutbound();
     };
 
     socket.onmessage = (e) => {
       try {
-        deliver(JSON.parse(e.data as string) as ShowEvent);
+        const parsed = JSON.parse(e.data as string) as ShowEvent & { __seq?: number };
+        if (typeof parsed.__seq === "number") lastWsSeq = parsed.__seq;
+        deliver(parsed);
       } catch {
         /* malformed frame - ignore */
       }
     };
 
     socket.onclose = () => {
-      setStatus(false);
-      const wait = Math.min(500 * 2 ** retry, 4000);
-      retry += 1;
-      if (reconnectTimer) clearTimeout(reconnectTimer);
-      reconnectTimer = setTimeout(connect, wait);
+      if (failTimer) clearTimeout(failTimer);
+      const hadOpened = mode === "ws";
+      socket = null;
+      if (!hadOpened && mode === "deciding") {
+        goHttp(null); // WS unusable on this network - stay on HTTP permanently
+        return;
+      }
+      /* a working WS dropped: bridge with HTTP while it reconnects */
+      goHttp(lastWsSeq > 0 ? lastWsSeq : null);
+      const wait = Math.min(1000 * 2 ** wsRetry, 8000);
+      wsRetry += 1;
+      reconnectTimer = setTimeout(openWs, wait);
     };
 
     socket.onerror = () => {
       try {
         socket?.close();
-      } catch {
-        /* close handler schedules the reconnect */
-      }
+      } catch {}
     };
   };
 
-  connect();
+  openWs();
 
   return {
     get kind() {
       return online ? "server" : "local";
     },
     publish: (ev) => {
-      if (socket && socket.readyState === WebSocket.OPEN) {
+      if (mode === "ws" && socket && socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify(ev));
         return;
       }
-      /* link down: mirror same-browser instantly AND queue for the server */
-      channel?.postMessage(ev);
-      outbound.push(ev);
-      if (outbound.length > 200) outbound.shift();
-      connect();
+      if (mode === "http") {
+        sendHttp(ev);
+        return;
+      }
+      enqueueOutbound(ev); // still deciding which path wins
     },
     subscribe: (cb) => {
       handlers.add(cb);

@@ -1,16 +1,18 @@
-/* server.js — SWAG DAY FS production/dev server.
+/* server.js - SWAG DAY FS production/dev server.
 
-   Next.js alone cannot own a WebSocket, so this custom server hosts BOTH:
-   - the Next.js app (pages, API), and
-   - the show realtime hub: a native WebSocket server on /api/ws.
+ Next.js alone cannot own a WebSocket, so this custom server hosts BOTH:
+ - the Next.js app (pages, static, everything HTTP), and
+ - the show realtime hub: a native WebSocket server on /api/ws PLUS an
+   HTTP fallback pair on /api/ws-send + /api/ws-poll.
 
-   One process owns every connected client (stage PC, controller PC,
-   phones) and fans each event out instantly to all of them. This replaces
-   the old SSE+POST hub whose module state was split across handler
-   contexts — the root cause of dead cross-device signaling.
+ One process owns every connected client (stage PC, controller PC,
+ phones) - there is no shared-state boundary left to break.
 
-   Run:  npm run dev  (node server.js --dev)
-         npm start    (node server.js) */
+ Why an HTTP fallback: some proxies and school networks pass plain HTTP
+ but kill WebSocket upgrades. The page itself loads over HTTP, so if a
+ phone can render /camera at all, /api/ws-send + /api/ws-poll WILL reach
+ this hub. The transport falls back automatically; healthy networks
+ stay instant via WS. */
 
 const { createServer } = require("http");
 const { parse } = require("url");
@@ -24,14 +26,79 @@ const app = next({ dev });
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
-  const server = createServer((req, res) => {
+  /* ---- hub state: single source of truth ---- */
+  const clients = new Set();
+  const history = []; // { seq, ev } - bounded ring for HTTP fallback catch-up
+  const HISTORY_MAX = 800;
+  let seqCounter = 0;
+
+  const publishEvent = (ev) => {
+    seqCounter += 1;
+    history.push({ seq: seqCounter, ev });
+    if (history.length > HISTORY_MAX) history.shift();
+    /* __seq rides along so clients resuming on HTTP never miss a beat */
+    const frame = JSON.stringify({ ...ev, __seq: seqCounter });
+    for (const c of clients) {
+      if (c.readyState === 1 /* OPEN */) c.send(frame);
+    }
+  };
+
+  const readBody = (req) =>
+    new Promise((resolve) => {
+      let data = "";
+      req.on("data", (chunk) => {
+        data += chunk;
+        if (data.length > 1e6) req.destroy(); // 1 MB cap - SDPs are ~20KB
+      });
+      req.on("end", () => resolve(data));
+      req.on("error", () => resolve(""));
+    });
+
+  /* HTTP fallback endpoints - same process as the hub, zero isolation.
+     POST /api/ws-send          -> publish an event
+     GET  /api/ws-poll?since=N  -> { events, seq }; since="head" syncs only */
+  const server = createServer(async (req, res) => {
+    const { pathname, query } = parse(req.url, true);
+
+    if (pathname === "/api/ws-send" && req.method === "POST") {
+      const raw = await readBody(req);
+      let ev = null;
+      try {
+        ev = JSON.parse(raw);
+      } catch {}
+      if (!ev || typeof ev.type !== "string") {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end('{"error":"bad event"}');
+        return;
+      }
+      publishEvent(ev);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end('{"ok":true}');
+      return;
+    }
+
+    if (pathname === "/api/ws-poll" && req.method === "GET") {
+      const events = [];
+      if (query.since !== "head") {
+        const since = Number.parseInt(String(query.since ?? "0"), 10) || 0;
+        for (let i = history.length - 1; i >= 0; i--) {
+          if (history[i].seq <= since) break;
+          events.unshift(history[i].ev);
+        }
+      }
+      res.writeHead(200, {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+      });
+      res.end(JSON.stringify({ events, seq: seqCounter }));
+      return;
+    }
+
     handle(req, res, parse(req.url, true));
   });
 
-  /* ---- the show hub ---- */
+  /* ---- native WebSocket hub on /api/ws ---- */
   const wss = new WebSocketServer({ noServer: true });
-  const clients = new Set();
-
   wss.on("connection", (socket) => {
     clients.add(socket);
     socket.isAlive = true;
@@ -39,57 +106,45 @@ app.prepare().then(() => {
       socket.isAlive = true;
     });
     socket.on("message", (data) => {
-      /* validate the show protocol: JSON object with a string `type` */
       let ev;
       try {
         ev = JSON.parse(data.toString());
       } catch {
-        return;
+        return; // malformed frame - ignore
       }
       if (!ev || typeof ev.type !== "string") return;
-      const frame = JSON.stringify(ev);
-      for (const c of clients) {
-        if (c.readyState === 1 /* WebSocket.OPEN */) c.send(frame);
-      }
+      publishEvent(ev); // fan out to EVERYONE, sender echo included (transport dedupes)
     });
     socket.on("close", () => clients.delete(socket));
     socket.on("error", () => clients.delete(socket));
   });
 
-  /* heartbeat: drop phones that vanished from Wi-Fi without a close frame */
-  const heartbeat = setInterval(() => {
-    for (const c of clients) {
-      if (c.isAlive === false) {
-        c.terminate();
-        clients.delete(c);
-        continue;
-      }
-      c.isAlive = false;
-      try {
-        c.ping();
-      } catch {
-        /* terminating anyway next round */
-      }
-    }
-  }, 30000);
-  if (heartbeat.unref) heartbeat.unref();
-
+  /* hub upgrades here; everything else (Next dev HMR) passes to Next */
+  const nextUpgrade = app.getUpgradeHandler();
   server.on("upgrade", (req, socket, head) => {
     const { pathname } = parse(req.url, true);
     if (pathname === "/api/ws") {
       wss.handleUpgrade(req, socket, head, (ws) => wss.emit("connection", ws, req));
     } else {
-      /* everything else (Next dev HMR websocket etc.) goes to Next */
-      try {
-        const upgradeHandler = app.getUpgradeHandler();
-        upgradeHandler(req, socket, head);
-      } catch {
-        socket.destroy();
-      }
+      nextUpgrade(req, socket, head);
     }
   });
 
+  /* kill dead connections (phones that vanished mid-song) */
+  const heartbeat = setInterval(() => {
+    for (const c of clients) {
+      if (c.isAlive === false) {
+        clients.delete(c);
+        c.terminate();
+        continue;
+      }
+      c.isAlive = false;
+      c.ping();
+    }
+  }, 30000);
+  heartbeat.unref();
+
   server.listen(port, () => {
-    console.log(`> SWAG DAY FS ready on http://localhost:${port}${dev ? "  (dev)" : ""}`);
+    console.log(`> SWAG DAY FS ready on http://localhost:${port} ${dev ? "(dev)" : ""}`);
   });
 });
