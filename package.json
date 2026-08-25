@@ -4,9 +4,9 @@
   "private": true,
   "description": "SWAG Day FS - full-stack stage production system for school events. Theme: Suit up! Show up! Sport it up! - Teachers' Day '26.",
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "node server.js --dev",
     "build": "next build",
-    "start": "next start"
+    "start": "node server.js"
   },
   "dependencies": {
     "@uimaxbai/am-lyrics": "^1.5.6",
@@ -14,10 +14,11 @@
     "next": "^16.0.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0",
+    "ws": "^8.18.0",
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@types/ws": "^8.5.10",
     "@tailwindcss/postcss": "^4.1.11",
     "@types/node": "^24.0.0",
     "@types/react": "^19.1.0",

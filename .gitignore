@@ -14,5 +14,3 @@ next-env.d.ts
 # logs
 *.log
 
-.env.*
-.rt-bus.jsonl

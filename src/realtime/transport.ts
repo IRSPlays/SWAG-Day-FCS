@@ -1,10 +1,12 @@
-/* Transport layer - OUR OWN SERVER (Railway), no third-party service.
-   - Primary: the /api/rt hub on this deployment (SSE downstream + POST
-     upstream). Cross-device by nature: phones, controller PC and stage PC
-     all connect to the same server.
-   - Fallback: BroadcastChannel (same browser) if the server is unreachable -
-     handy for rehearsing on one laptop with no network.
-   The rest of the app never knows which one it got. */
+/* Transport layer - OUR OWN WEBSOCKET HUB (server.js), no third-party service.
+   - Primary: native WebSocket at /api/ws on this deployment. One server
+     process owns every client (stage PC, controller PC, phones) and fans
+     every event out instantly. No SSE buffering, no polling, no
+     shared-module-state pitfalls.
+   - Fallback: BroadcastChannel (same browser) when the server is
+     unreachable - handy for rehearsing on one laptop with no network.
+   Publishes made while the socket is down are queued and flushed on reopen.
+   The rest of the app never knows which path delivered. */
 
 import type { ShowEvent } from "./types";
 
@@ -30,23 +32,23 @@ export function getTransport(): Transport {
     };
     return instance;
   }
-  instance = serverTransport();
+  instance = wsTransport();
   return instance;
 }
 
-function serverTransport(): Transport {
+function wsTransport(): Transport {
   const handlers = new Set<(ev: ShowEvent) => void>();
   const statusCbs = new Set<(kind: "local" | "server") => void>();
   let online = false;
 
   const setStatus = (up: boolean) => {
-    if (up === online) return;
+    if (online === up) return;
     online = up;
     statusCbs.forEach((cb) => cb(up ? "server" : "local"));
   };
 
-  /* event-id dedupe: an event can arrive via BOTH the BroadcastChannel
-     (same-browser mirror) and the server stream â€” deliver each exactly once */
+  /* event-id dedupe: an event can arrive twice (socket echo + offline
+     BroadcastChannel mirror) - deliver each exactly once */
   const seenIds = new Set<string>();
   const deliver = (ev: ShowEvent) => {
     if (!ev.id || seenIds.has(ev.id)) return;
@@ -69,61 +71,76 @@ function serverTransport(): Transport {
     deliver(e.data as ShowEvent);
   });
 
-  /* downstream: server-sent events */
-  const es = new EventSource("/api/rt");
-  es.onopen = () => {
-    setStatus(true);
-  };
-  es.onerror = () => {
-    /* EventSource auto-reconnects; while down we run on the channel */
-    setStatus(false);
-  };
-  es.onmessage = (e) => {
-    try {
-      deliver(JSON.parse(e.data as string) as ShowEvent);
-    } catch {
-      /* keep-alive comment or malformed frame - ignore */
+  let socket: WebSocket | null = null;
+  let retry = 0;
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  const outbound: ShowEvent[] = [];
+
+  const connect = () => {
+    if (
+      socket &&
+      (socket.readyState === WebSocket.OPEN ||
+        socket.readyState === WebSocket.CONNECTING)
+    ) {
+      return;
     }
+    const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+    socket = new WebSocket(`${proto}//${window.location.host}/api/ws`);
+
+    socket.onopen = () => {
+      retry = 0;
+      setStatus(true);
+      /* flush everything queued while the link was down */
+      for (const ev of outbound.splice(0)) {
+        try {
+          socket?.send(JSON.stringify(ev));
+        } catch {
+          /* socket died again - reconnect loop takes over */
+        }
+      }
+    };
+
+    socket.onmessage = (e) => {
+      try {
+        deliver(JSON.parse(e.data as string) as ShowEvent);
+      } catch {
+        /* malformed frame - ignore */
+      }
+    };
+
+    socket.onclose = () => {
+      setStatus(false);
+      const wait = Math.min(500 * 2 ** retry, 4000);
+      retry += 1;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      reconnectTimer = setTimeout(connect, wait);
+    };
+
+    socket.onerror = () => {
+      try {
+        socket?.close();
+      } catch {
+        /* close handler schedules the reconnect */
+      }
+    };
   };
 
-  /* upstream: POST (carries WebRTC SDP/ICE payloads reliably).
-     ALWAYS posted, even before the SSE stream opens — a slow-opening stream
-     must never stall cross-device signaling.
-     ORDERING: independent fetches have NO cross-request ordering guarantee
-     (HTTP/2 multiplexing), so a tiny cam-ice frame can beat its large
-     cam-offer to the server and get dropped by the receiver. Camera
-     signaling is therefore serialized through a promise chain; every other
-     event stays fire-and-forget for minimum latency. */
-  const post = (ev: ShowEvent) =>
-    fetch("/api/rt", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(ev),
-    });
-  let camPostChain: Promise<void> = Promise.resolve();
+  connect();
+
   return {
     get kind() {
       return online ? "server" : "local";
     },
     publish: (ev) => {
-      if (!online) {
-        /* server link not confirmed yet: mirror locally right away (zero
-           latency for same-browser rehearsal) AND fire the POST regardless —
-           remote devices get it from the server even if our SSE is still
-           handshaking. dedupe guarantees no double delivery. */
-        channel?.postMessage(ev);
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify(ev));
+        return;
       }
-      const doPost = async () => {
-        await post(ev).catch(() => {
-          /* server truly unreachable -> same-browser delivery only */
-          channel?.postMessage(ev);
-        });
-      };
-      if (typeof ev.type === "string" && ev.type.startsWith("cam-")) {
-        camPostChain = camPostChain.then(doPost, doPost);
-      } else {
-        void doPost();
-      }
+      /* link down: mirror same-browser instantly AND queue for the server */
+      channel?.postMessage(ev);
+      outbound.push(ev);
+      if (outbound.length > 200) outbound.shift();
+      connect();
     },
     subscribe: (cb) => {
       handlers.add(cb);

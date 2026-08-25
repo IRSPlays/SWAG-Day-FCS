@@ -27,7 +27,7 @@ npm run dev
 - [x] **01** Scaffold + design tokens (anti-yellow-light palette: volt cyan / hot magenta / ultraviolet on violet-black · Anton / Instrument Serif / Space Grotesk)
 - [x] **02** Reference deck + mograph transitions → `/preview`
 - [x] **03** Stage output + keyboard nav + blackout → `/stage`
-- [x] **04** Realtime sync (`/controller` ⇄ `/stage` · BroadcastChannel locally, our own `/api/rt` SSE hub cross-device)
+- [x] **04** Realtime sync (`/controller` ⇄ `/stage` · BroadcastChannel locally, our own WebSocket hub cross-device)
 - [x] **05** Audio mixer (procedural Web-Audio beds, crossfader, SFX pads, ducking — zero audio files)
 - [x] **06** Manual editor with live overrides → `/editor`
 - [x] **07** Audience mobile view: QR, emoji storms, live votes → `/audience`
@@ -50,6 +50,6 @@ Keyboard on a lyric slide: P play/pause track · ↓/↑ next/prev line · R res
 
 ## Going cross-device (Railway — our own server)
 
-1. Deploy to Railway (framework: Next.js, start command `npm run build && npm start` — one instance).
-2. Nothing else to configure: realtime runs on our own `/api/rt` SSE hub — deck cues, lyric commands and WebRTC camera signaling all flow through it. No third-party keys needed.
+1. Deploy to Railway (framework: Node, start command `npm run build && npm start` — `npm start` runs `server.js`, one instance).
+2. Nothing else to configure: realtime runs on our own WebSocket hub at `/api/ws` (same server as the app) — deck cues, lyric commands and WebRTC camera signaling all flow through it. No third-party keys needed.
 3. If the server is unreachable the system still works — synced across tabs of one browser via BroadcastChannel.
