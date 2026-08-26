@@ -1,0 +1,448 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml" xmlns:itunes="http://music.apple.com/lyrics">
+  <body>
+    <div itunes:song-part="Verse">
+      <p begin="00:00:06.651" end="00:00:13.854">
+        <span begin="00:00:06.651" end="00:00:09.427">Oh, </span>
+        <span begin="00:00:10.297" end="00:00:13.854">hey</span>
+      </p>
+      <p begin="00:00:14.767" end="00:00:17.001">
+        <span begin="00:00:14.767" end="00:00:15.019">You </span>
+        <span begin="00:00:15.019" end="00:00:15.219">don't </span>
+        <span begin="00:00:15.219" end="00:00:15.686">know, </span>
+        <span begin="00:00:15.686" end="00:00:17.001">babe</span>
+      </p>
+      <p begin="00:00:17.978" end="00:00:20.034">
+        <span begin="00:00:17.978" end="00:00:18.205">When </span>
+        <span begin="00:00:18.205" end="00:00:18.373">you </span>
+        <span begin="00:00:18.373" end="00:00:18.837">hold </span>
+        <span begin="00:00:18.837" end="00:00:20.034">me</span>
+      </p>
+      <p begin="00:00:20.957" end="00:00:22.752">
+        <span begin="00:00:20.957" end="00:00:21.090">And </span>
+        <span begin="00:00:21.090" end="00:00:21.474">kiss </span>
+        <span begin="00:00:21.474" end="00:00:21.823">me </span>
+        <span begin="00:00:21.823" end="00:00:22.752">slowly</span>
+      </p>
+      <p begin="00:00:22.762" end="00:00:26.116">
+        <span begin="00:00:22.762" end="00:00:22.933">It's </span>
+        <span begin="00:00:22.933" end="00:00:23.047">the </span>
+        <span begin="00:00:23.047" end="00:00:23.665">sweetest </span>
+        <span begin="00:00:23.665" end="00:00:26.116">thing</span>
+      </p>
+      <p begin="00:00:27.564" end="00:00:29.639">
+        <span begin="00:00:27.564" end="00:00:27.798">And </span>
+        <span begin="00:00:27.798" end="00:00:27.982">it </span>
+        <span begin="00:00:27.982" end="00:00:28.432">don't </span>
+        <span begin="00:00:28.432" end="00:00:29.639">change</span>
+      </p>
+      <p begin="00:00:30.295" end="00:00:32.868">
+        <span begin="00:00:30.295" end="00:00:30.599">If </span>
+        <span begin="00:00:30.599" end="00:00:30.817">I </span>
+        <span begin="00:00:30.817" end="00:00:31.031">had </span>
+        <span begin="00:00:31.031" end="00:00:31.265">it </span>
+        <span begin="00:00:31.265" end="00:00:31.681">my </span>
+        <span begin="00:00:31.681" end="00:00:32.868">way</span>
+      </p>
+      <p begin="00:00:33.964" end="00:00:38.596">
+        <span begin="00:00:33.964" end="00:00:34.188">You </span>
+        <span begin="00:00:34.188" end="00:00:34.388">would </span>
+        <span begin="00:00:34.388" end="00:00:34.869">know </span>
+        <span begin="00:00:34.869" end="00:00:35.418">that </span>
+        <span begin="00:00:35.418" end="00:00:35.885">you </span>
+        <span begin="00:00:35.885" end="00:00:38.596">are</span>
+      </p>
+      <p begin="00:00:38.606" end="00:00:39.155">
+        <span begin="00:00:38.606" end="00:00:39.155">Ooh</span>
+      </p>
+    </div>
+    <div itunes:song-part="PreChorus">
+      <p begin="00:00:39.573" end="00:00:42.742">
+        <span begin="00:00:39.573" end="00:00:39.779">You're </span>
+        <span begin="00:00:39.779" end="00:00:39.947">the </span>
+        <span begin="00:00:39.947" end="00:00:40.363">coffee </span>
+        <span begin="00:00:40.363" end="00:00:40.579">that </span>
+        <span begin="00:00:40.579" end="00:00:40.813">I </span>
+        <span begin="00:00:40.813" end="00:00:41.213">need </span>
+        <span begin="00:00:41.213" end="00:00:41.368">in </span>
+        <span begin="00:00:41.368" end="00:00:41.597">the </span>
+        <span begin="00:00:41.597" end="00:00:42.742">morning</span>
+      </p>
+      <p begin="00:00:42.782" end="00:00:45.826">
+        <span begin="00:00:42.782" end="00:00:42.966">You're </span>
+        <span begin="00:00:42.966" end="00:00:43.134">my </span>
+        <span begin="00:00:43.134" end="00:00:43.691">sunshine </span>
+        <span begin="00:00:43.691" end="00:00:43.843">in </span>
+        <span begin="00:00:43.843" end="00:00:44.067">the </span>
+        <span begin="00:00:44.067" end="00:00:44.474">rain </span>
+        <span begin="00:00:44.474" end="00:00:44.642">when </span>
+        <span begin="00:00:44.642" end="00:00:44.824">it's </span>
+        <span begin="00:00:44.824" end="00:00:45.826">pouring</span>
+      </p>
+      <p begin="00:00:45.926" end="00:00:48.026">
+        <span begin="00:00:45.926" end="00:00:46.115">Won't </span>
+        <span begin="00:00:46.115" end="00:00:46.299">you </span>
+        <span begin="00:00:46.299" end="00:00:46.581">give </span>
+        <span begin="00:00:46.581" end="00:00:46.800">yourself </span>
+        <span begin="00:00:46.800" end="00:00:47.200">to </span>
+        <span begin="00:00:47.200" end="00:00:48.026">me?</span>
+      </p>
+      <p begin="00:00:48.036" end="00:00:51.326">
+        <span begin="00:00:48.036" end="00:00:48.370">Give </span>
+        <span begin="00:00:48.370" end="00:00:48.636">it </span>
+        <span begin="00:00:48.636" end="00:00:50.452">all, </span>
+        <span begin="00:00:50.452" end="00:00:51.326">oh</span>
+      </p>
+    </div>
+    <div itunes:song-part="Chorus">
+      <p begin="00:00:51.195" end="00:00:52.876">
+        <span begin="00:00:51.195" end="00:00:51.376">I </span>
+        <span begin="00:00:51.376" end="00:00:51.555">just </span>
+        <span begin="00:00:51.555" end="00:00:51.904">wanna </span>
+        <span begin="00:00:51.904" end="00:00:52.876">see</span>
+      </p>
+      <p begin="00:00:53.116" end="00:00:59.308">
+        <span begin="00:00:53.116" end="00:00:53.484">I </span>
+        <span begin="00:00:53.484" end="00:00:53.967">just </span>
+        <span begin="00:00:53.967" end="00:00:54.650">wanna </span>
+        <span begin="00:00:54.650" end="00:00:55.551">see </span>
+        <span begin="00:00:55.551" end="00:00:56.245">how </span>
+        <span begin="00:00:56.266" end="00:00:57.551">beautiful </span>
+        <span begin="00:00:57.551" end="00:00:57.983">you </span>
+        <span begin="00:00:57.983" end="00:00:59.308">are</span>
+      </p>
+      <p begin="00:00:59.586" end="00:01:02.483">
+        <span begin="00:00:59.586" end="00:00:59.965">You </span>
+        <span begin="00:00:59.965" end="00:01:00.355">know </span>
+        <span begin="00:01:00.355" end="00:01:00.761">that </span>
+        <span begin="00:01:00.761" end="00:01:01.169">I </span>
+        <span begin="00:01:01.169" end="00:01:01.903">see </span>
+        <span begin="00:01:01.903" end="00:01:02.483">it</span>
+      </p>
+      <p begin="00:01:02.653" end="00:01:05.731">
+        <span begin="00:01:02.653" end="00:01:03.087">I </span>
+        <span begin="00:01:03.087" end="00:01:03.503">know </span>
+        <span begin="00:01:03.503" end="00:01:03.871">you're </span>
+        <span begin="00:01:03.871" end="00:01:04.252">a </span>
+        <span begin="00:01:04.252" end="00:01:05.731">star</span>
+      </p>
+      <p begin="00:01:05.881" end="00:01:08.970">
+        <span begin="00:01:05.881" end="00:01:06.386">Where </span>
+        <span begin="00:01:06.386" end="00:01:06.735">you </span>
+        <span begin="00:01:06.735" end="00:01:07.103">go, </span>
+        <span begin="00:01:07.103" end="00:01:07.501">I'll </span>
+        <span begin="00:01:07.501" end="00:01:08.970">follow</span>
+      </p>
+      <p begin="00:01:09.097" end="00:01:12.105">
+        <span begin="00:01:09.097" end="00:01:09.561">No </span>
+        <span begin="00:01:09.561" end="00:01:10.244">matter </span>
+        <span begin="00:01:10.244" end="00:01:10.679">how </span>
+        <span begin="00:01:10.679" end="00:01:12.105">far</span>
+      </p>
+      <p begin="00:01:12.265" end="00:01:15.335">
+        <span begin="00:01:12.265" end="00:01:12.707">If </span>
+        <span begin="00:01:12.707" end="00:01:13.091">life </span>
+        <span begin="00:01:13.091" end="00:01:13.457">is </span>
+        <span begin="00:01:13.457" end="00:01:13.905">a </span>
+        <span begin="00:01:13.905" end="00:01:14.606">mo</span>
+        <span begin="00:01:14.606" end="00:01:15.335">vie</span>
+      </p>
+      <p begin="00:01:15.475" end="00:01:18.953">
+        <span begin="00:01:15.475" end="00:01:15.913">Oh, </span>
+        <span begin="00:01:15.913" end="00:01:16.265">you're </span>
+        <span begin="00:01:16.265" end="00:01:16.630">the </span>
+        <span begin="00:01:16.630" end="00:01:17.167">best </span>
+        <span begin="00:01:17.167" end="00:01:18.953">part</span>
+      </p>
+      <p begin="00:01:19.172" end="00:01:25.277">
+        <span begin="00:01:19.172" end="00:01:21.772">Oh, </span>
+        <span begin="00:01:22.307" end="00:01:22.792">you're </span>
+        <span begin="00:01:22.792" end="00:01:23.221">the </span>
+        <span begin="00:01:23.221" end="00:01:23.685">best </span>
+        <span begin="00:01:23.685" end="00:01:25.277">part</span>
+      </p>
+      <p begin="00:01:25.542" end="00:01:31.582">
+        <span begin="00:01:25.542" end="00:01:28.704">Oh, </span>
+        <span begin="00:01:29.416" end="00:01:30.007">best </span>
+        <span begin="00:01:30.007" end="00:01:31.582">part</span>
+      </p>
+    </div>
+    <div itunes:song-part="Verse">
+      <p begin="00:01:31.662" end="00:01:33.902">
+        <span begin="00:01:31.662" end="00:01:32.034">It's </span>
+        <span begin="00:01:32.034" end="00:01:32.316">this </span>
+        <span begin="00:01:32.316" end="00:01:33.902">sunrise</span>
+      </p>
+      <p begin="00:01:34.887" end="00:01:37.266">
+        <span begin="00:01:34.887" end="00:01:35.251">And </span>
+        <span begin="00:01:35.251" end="00:01:35.543">those </span>
+        <span begin="00:01:35.543" end="00:01:35.971">brown </span>
+        <span begin="00:01:35.971" end="00:01:36.810">eyes, </span>
+        <span begin="00:01:36.810" end="00:01:37.266">yes</span>
+      </p>
+      <p begin="00:01:38.180" end="00:01:42.455">
+        <span begin="00:01:38.180" end="00:01:38.354">You're </span>
+        <span begin="00:01:38.354" end="00:01:38.613">the </span>
+        <span begin="00:01:38.613" end="00:01:39.098">one </span>
+        <span begin="00:01:39.098" end="00:01:39.348">that </span>
+        <span begin="00:01:39.348" end="00:01:39.651">I </span>
+        <span begin="00:01:39.651" end="00:01:40.002">de</span>
+        <span begin="00:01:40.002" end="00:01:42.455">sire</span>
+      </p>
+      <p begin="00:01:44.448" end="00:01:46.414">
+        <span begin="00:01:44.448" end="00:01:44.674">When </span>
+        <span begin="00:01:44.674" end="00:01:44.906">we </span>
+        <span begin="00:01:44.906" end="00:01:45.567">wake </span>
+        <span begin="00:01:45.567" end="00:01:46.414">up</span>
+      </p>
+      <p begin="00:01:47.428" end="00:01:49.906">
+        <span begin="00:01:47.428" end="00:01:47.716">And </span>
+        <span begin="00:01:47.716" end="00:01:47.919">then </span>
+        <span begin="00:01:47.919" end="00:01:48.163">we </span>
+        <span begin="00:01:48.163" end="00:01:48.585">make </span>
+        <span begin="00:01:48.585" end="00:01:49.906">love</span>
+      </p>
+      <p begin="00:01:50.969" end="00:01:55.179">
+        <span begin="00:01:50.969" end="00:01:51.433">It </span>
+        <span begin="00:01:51.433" end="00:01:51.945">makes </span>
+        <span begin="00:01:51.945" end="00:01:52.129">me </span>
+        <span begin="00:01:52.129" end="00:01:52.474">feel </span>
+        <span begin="00:01:52.474" end="00:01:52.772">so </span>
+        <span begin="00:01:52.772" end="00:01:55.179">nice</span>
+      </p>
+    </div>
+    <div itunes:song-part="PreChorus">
+      <p begin="00:01:56.252" end="00:01:59.459">
+        <span begin="00:01:56.252" end="00:01:56.633">You're </span>
+        <span begin="00:01:56.633" end="00:01:56.849">my </span>
+        <span begin="00:01:56.849" end="00:01:57.189">water </span>
+        <span begin="00:01:57.189" end="00:01:57.392">when </span>
+        <span begin="00:01:57.392" end="00:01:57.610">I'm </span>
+        <span begin="00:01:57.610" end="00:01:58.149">stuck </span>
+        <span begin="00:01:58.149" end="00:01:58.587">in the </span>
+        <span begin="00:01:58.587" end="00:01:59.459">desert</span>
+      </p>
+      <p begin="00:01:59.629" end="00:02:02.907">
+        <span begin="00:01:59.629" end="00:01:59.950">You're </span>
+        <span begin="00:01:59.950" end="00:02:00.170">the </span>
+        <span begin="00:02:00.170" end="00:02:00.735">Tylenol </span>
+        <span begin="00:02:00.735" end="00:02:00.835">I </span>
+        <span begin="00:02:00.835" end="00:02:01.264">take </span>
+        <span begin="00:02:01.264" end="00:02:01.467">when </span>
+        <span begin="00:02:01.467" end="00:02:01.679">my </span>
+        <span begin="00:02:01.679" end="00:02:02.020">head </span>
+        <span begin="00:02:02.020" end="00:02:02.907">hurts</span>
+      </p>
+      <p begin="00:02:03.776" end="00:02:09.823">
+        <span begin="00:02:03.776" end="00:02:03.988">You're </span>
+        <span begin="00:02:03.988" end="00:02:04.125">the </span>
+        <span begin="00:02:04.125" end="00:02:05.136">sunshine </span>
+        <span begin="00:02:05.136" end="00:02:05.422">on </span>
+        <span begin="00:02:05.422" end="00:02:05.713">my </span>
+        <span begin="00:02:05.713" end="00:02:09.823">life</span>
+      </p>
+    </div>
+    <div itunes:song-part="Chorus">
+      <p begin="00:02:09.883" end="00:02:15.634">
+        <span begin="00:02:09.883" end="00:02:10.368">I </span>
+        <span begin="00:02:10.368" end="00:02:10.868">just </span>
+        <span begin="00:02:10.868" end="00:02:11.583">wanna </span>
+        <span begin="00:02:11.583" end="00:02:12.332">see </span>
+        <span begin="00:02:12.332" end="00:02:13.082">how </span>
+        <span begin="00:02:13.224" end="00:02:14.426">beautiful </span>
+        <span begin="00:02:14.426" end="00:02:14.872">you </span>
+        <span begin="00:02:14.872" end="00:02:15.634">are</span>
+      </p>
+      <p begin="00:02:16.250" end="00:02:19.331">
+        <span begin="00:02:16.250" end="00:02:16.518">You </span>
+        <span begin="00:02:16.518" end="00:02:17.142">know </span>
+        <span begin="00:02:17.142" end="00:02:17.571">that </span>
+        <span begin="00:02:17.571" end="00:02:17.755">I </span>
+        <span begin="00:02:17.755" end="00:02:18.939">see </span>
+        <span begin="00:02:18.939" end="00:02:19.331">it</span>
+      </p>
+      <p begin="00:02:19.453" end="00:02:22.535">
+        <span begin="00:02:19.453" end="00:02:19.929">I </span>
+        <span begin="00:02:19.929" end="00:02:20.357">know </span>
+        <span begin="00:02:20.357" end="00:02:20.845">you're </span>
+        <span begin="00:02:20.845" end="00:02:20.958">a </span>
+        <span begin="00:02:20.958" end="00:02:22.535">star</span>
+      </p>
+      <p begin="00:02:22.745" end="00:02:25.757">
+        <span begin="00:02:22.745" end="00:02:23.257">Where </span>
+        <span begin="00:02:23.257" end="00:02:23.646">you </span>
+        <span begin="00:02:23.646" end="00:02:24.072">go, </span>
+        <span begin="00:02:24.072" end="00:02:24.381">I'll </span>
+        <span begin="00:02:24.381" end="00:02:25.757">follow</span>
+      </p>
+      <p begin="00:02:25.907" end="00:02:28.652">
+        <span begin="00:02:25.907" end="00:02:26.391">No </span>
+        <span begin="00:02:26.391" end="00:02:27.116">matter </span>
+        <span begin="00:02:27.116" end="00:02:27.664">how </span>
+        <span begin="00:02:27.664" end="00:02:28.652">far</span>
+      </p>
+      <p begin="00:02:29.126" end="00:02:32.086">
+        <span begin="00:02:29.126" end="00:02:29.538">If </span>
+        <span begin="00:02:29.538" end="00:02:30.068">life </span>
+        <span begin="00:02:30.068" end="00:02:30.485">is </span>
+        <span begin="00:02:30.485" end="00:02:30.880">a </span>
+        <span begin="00:02:30.880" end="00:02:32.086">movie</span>
+      </p>
+      <p begin="00:02:32.309" end="00:02:35.524">
+        <span begin="00:02:32.309" end="00:02:32.787">Then </span>
+        <span begin="00:02:32.787" end="00:02:33.351">you're </span>
+        <span begin="00:02:33.351" end="00:02:33.689">the </span>
+        <span begin="00:02:33.689" end="00:02:34.029">best </span>
+        <span begin="00:02:34.029" end="00:02:35.524">part</span>
+      </p>
+      <p begin="00:02:35.986" end="00:02:41.874">
+        <span begin="00:02:35.986" end="00:02:38.827">Oh, </span>
+        <span begin="00:02:38.827" end="00:02:39.445">you're </span>
+        <span begin="00:02:39.445" end="00:02:39.928">the </span>
+        <span begin="00:02:39.928" end="00:02:40.360">best </span>
+        <span begin="00:02:40.360" end="00:02:41.874">part</span>
+      </p>
+      <p begin="00:02:42.339" end="00:02:47.870">
+        <span begin="00:02:42.339" end="00:02:45.783">Oh, </span>
+        <span begin="00:02:46.299" end="00:02:46.918">best </span>
+        <span begin="00:02:46.918" end="00:02:47.870">part</span>
+      </p>
+    </div>
+    <div itunes:song-part="Refrain">
+      <p begin="00:02:47.523" end="00:02:50.198">
+        <span begin="00:02:47.523" end="00:02:47.760">If </span>
+        <span begin="00:02:47.760" end="00:02:47.931">you </span>
+        <span begin="00:02:47.931" end="00:02:48.153">love </span>
+        <span begin="00:02:48.153" end="00:02:48.380">me, </span>
+        <span begin="00:02:48.380" end="00:02:48.643">won't </span>
+        <span begin="00:02:48.643" end="00:02:48.817">you </span>
+        <span begin="00:02:48.817" end="00:02:49.269">say </span>
+        <span begin="00:02:49.269" end="00:02:49.618">some</span>
+        <span begin="00:02:49.618" end="00:02:50.198">thing?</span>
+      </p>
+      <p begin="00:02:50.644" end="00:02:52.018">
+        <span begin="00:02:50.644" end="00:02:50.932">If </span>
+        <span begin="00:02:50.932" end="00:02:51.110">you </span>
+        <span begin="00:02:51.110" end="00:02:51.304">love </span>
+        <span begin="00:02:51.304" end="00:02:51.461">me, </span>
+        <span begin="00:02:51.461" end="00:02:51.698">won't </span>
+        <span begin="00:02:51.698" end="00:02:52.018">you?</span>
+      </p>
+      <p begin="00:02:53.067" end="00:02:53.882">
+        <span begin="00:02:53.067" end="00:02:53.419">Won't </span>
+        <span begin="00:02:53.419" end="00:02:53.882">you?</span>
+      </p>
+      <p begin="00:02:53.922" end="00:02:56.546">
+        <span begin="00:02:53.922" end="00:02:54.116">If </span>
+        <span begin="00:02:54.116" end="00:02:54.355">you </span>
+        <span begin="00:02:54.355" end="00:02:54.594">love </span>
+        <span begin="00:02:54.594" end="00:02:54.768">me, </span>
+        <span begin="00:02:54.768" end="00:02:54.989">won't </span>
+        <span begin="00:02:54.989" end="00:02:55.122">you </span>
+        <span begin="00:02:55.122" end="00:02:55.522">say </span>
+        <span begin="00:02:55.522" end="00:02:55.989">some</span>
+        <span begin="00:02:55.989" end="00:02:56.546">thing?</span>
+      </p>
+      <p begin="00:02:57.087" end="00:02:58.412">
+        <span begin="00:02:57.087" end="00:02:57.280">If </span>
+        <span begin="00:02:57.280" end="00:02:57.476">you </span>
+        <span begin="00:02:57.476" end="00:02:57.690">love </span>
+        <span begin="00:02:57.690" end="00:02:57.833">me, </span>
+        <span begin="00:02:57.833" end="00:02:58.136">won't </span>
+        <span begin="00:02:58.136" end="00:02:58.412">you?</span>
+      </p>
+      <p begin="00:02:59.050" end="00:03:00.164">
+        <span begin="00:02:59.050" end="00:02:59.281">Love </span>
+        <span begin="00:02:59.281" end="00:02:59.462">me, </span>
+        <span begin="00:02:59.462" end="00:02:59.737">won't </span>
+        <span begin="00:02:59.737" end="00:03:00.164">you?</span>
+      </p>
+      <p begin="00:03:00.284" end="00:03:02.979">
+        <span begin="00:03:00.284" end="00:03:00.567">If </span>
+        <span begin="00:03:00.567" end="00:03:00.757">you </span>
+        <span begin="00:03:00.757" end="00:03:00.959">love </span>
+        <span begin="00:03:00.959" end="00:03:01.156">me, </span>
+        <span begin="00:03:01.156" end="00:03:01.372">won't </span>
+        <span begin="00:03:01.372" end="00:03:01.482">you </span>
+        <span begin="00:03:01.482" end="00:03:01.882">say </span>
+        <span begin="00:03:01.882" end="00:03:02.979">something?</span>
+      </p>
+      <p begin="00:03:03.546" end="00:03:04.872">
+        <span begin="00:03:03.546" end="00:03:03.850">If </span>
+        <span begin="00:03:03.850" end="00:03:04.032">you </span>
+        <span begin="00:03:04.032" end="00:03:04.236">love </span>
+        <span begin="00:03:04.236" end="00:03:04.360">me, </span>
+        <span begin="00:03:04.360" end="00:03:04.590">won't </span>
+        <span begin="00:03:04.590" end="00:03:04.872">you?</span>
+      </p>
+      <p begin="00:03:06.691" end="00:03:09.409">
+        <span begin="00:03:06.691" end="00:03:06.936">If </span>
+        <span begin="00:03:06.936" end="00:03:07.132">you </span>
+        <span begin="00:03:07.132" end="00:03:07.335">love </span>
+        <span begin="00:03:07.335" end="00:03:07.478">me, </span>
+        <span begin="00:03:07.478" end="00:03:07.635">won't </span>
+        <span begin="00:03:07.635" end="00:03:07.821">you </span>
+        <span begin="00:03:07.821" end="00:03:08.281">say </span>
+        <span begin="00:03:08.281" end="00:03:09.409">something?</span>
+      </p>
+      <p begin="00:03:09.944" end="00:03:11.483">
+        <span begin="00:03:09.944" end="00:03:10.044">If </span>
+        <span begin="00:03:10.044" end="00:03:10.220">you </span>
+        <span begin="00:03:10.220" end="00:03:10.424">love </span>
+        <span begin="00:03:10.424" end="00:03:10.548">me, </span>
+        <span begin="00:03:10.548" end="00:03:10.778">won't </span>
+        <span begin="00:03:10.778" end="00:03:11.483">you?</span>
+      </p>
+      <p begin="00:03:11.845" end="00:03:12.961">
+        <span begin="00:03:11.845" end="00:03:12.165">Love </span>
+        <span begin="00:03:12.165" end="00:03:12.265">me, </span>
+        <span begin="00:03:12.265" end="00:03:12.499">won't </span>
+        <span begin="00:03:12.499" end="00:03:12.961">you?</span>
+      </p>
+    </div>
+    <div itunes:song-part="Outro">
+      <p begin="00:03:13.112" end="00:03:15.791">
+        <span begin="00:03:13.112" end="00:03:13.354">If </span>
+        <span begin="00:03:13.354" end="00:03:13.495">you </span>
+        <span begin="00:03:13.495" end="00:03:13.674">love </span>
+        <span begin="00:03:13.674" end="00:03:13.903">me, </span>
+        <span begin="00:03:13.903" end="00:03:14.079">won't </span>
+        <span begin="00:03:14.079" end="00:03:14.253">you </span>
+        <span begin="00:03:14.253" end="00:03:14.735">say </span>
+        <span begin="00:03:14.735" end="00:03:15.791">something?</span>
+      </p>
+      <p begin="00:03:16.326" end="00:03:17.758">
+        <span begin="00:03:16.326" end="00:03:16.581">If </span>
+        <span begin="00:03:16.581" end="00:03:16.816">you </span>
+        <span begin="00:03:16.816" end="00:03:17.048">love </span>
+        <span begin="00:03:17.048" end="00:03:17.283">me, </span>
+        <span begin="00:03:17.283" end="00:03:17.448">won't </span>
+        <span begin="00:03:17.448" end="00:03:17.758">you?</span>
+      </p>
+      <p begin="00:03:19.469" end="00:03:22.213">
+        <span begin="00:03:19.469" end="00:03:19.722">If </span>
+        <span begin="00:03:19.722" end="00:03:19.923">you </span>
+        <span begin="00:03:19.923" end="00:03:20.120">love </span>
+        <span begin="00:03:20.120" end="00:03:20.244">me, </span>
+        <span begin="00:03:20.244" end="00:03:20.545">won't </span>
+        <span begin="00:03:20.545" end="00:03:20.742">you </span>
+        <span begin="00:03:20.742" end="00:03:21.188">say </span>
+        <span begin="00:03:21.188" end="00:03:22.213">something?</span>
+      </p>
+      <p begin="00:03:22.700" end="00:03:24.157">
+        <span begin="00:03:22.700" end="00:03:22.924">If </span>
+        <span begin="00:03:22.924" end="00:03:23.073">you </span>
+        <span begin="00:03:23.073" end="00:03:23.272">love </span>
+        <span begin="00:03:23.272" end="00:03:23.491">me, </span>
+        <span begin="00:03:23.491" end="00:03:23.808">won't </span>
+        <span begin="00:03:23.808" end="00:03:24.157">you?</span>
+      </p>
+      <p begin="00:03:24.716" end="00:03:27.345">
+        <span begin="00:03:24.716" end="00:03:24.912">Love </span>
+        <span begin="00:03:24.912" end="00:03:25.102">me, </span>
+        <span begin="00:03:25.102" end="00:03:25.383">won't </span>
+        <span begin="00:03:25.383" end="00:03:27.345">you?</span>
+      </p>
+    </div>
+  </body>
+</tt>

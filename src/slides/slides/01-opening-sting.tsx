@@ -12,7 +12,7 @@ export const meta: SlideMeta = {
   title: "01 · Opening Sting",
   transition: "track-sweep",
   durationHint: 8,
-  notes: "House music at 70%. Fire the whistle SFX the moment the title lands.",
+  notes: "0940 Grand Opening. House music at 70%. Fire the whistle SFX the moment the title lands.",
   accent: "volt",
 };
 

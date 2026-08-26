@@ -1,37 +1,46 @@
 /* Deck manifest — the ONLY ordering config.
-   Each slide is its own file under ./slides; this list is the running order. */
+   Each slide is its own file under ./slides; this list is the running order.
+   Mirrors SWAG Day Concert Flow.docx (0940–1030) + Official Emcee Script. */
 
 import type { SlideModule } from "./types";
 
-/* Act 1: Opening Sting & Sports Team Hype */
+/* 0940 · Grand Opening — emcees open, theme hype */
 import * as s01 from "./slides/01-opening-sting";
-import * as s02 from "./slides/02-are-you-ready";
+import * as s02 from "./slides/02-emcee-welcome";
 
-/* Act 2: Musical Performance Block 1 */
-import * as s03 from "./slides/03-perf-pulang";
-import * as s04 from "./slides/04-perf-ditto";
-import * as s05 from "./slides/05-perf-everlong";
-import * as s06 from "./slides/06-perf-flashlight";
+/* 0945 · The Walkway: Sports Edition — runway of champions */
+import * as s03 from "./slides/03-walkway";
 
-/* Act 3: Cohort Tournament Game Segment */
-import * as s07 from "./slides/07-tournament-intro";
-import * as s08 from "./slides/08-game-inflatable-relay";
-import * as s09 from "./slides/09-game-ball-balance";
-import * as s10 from "./slides/10-tournament-podium";
+/* 0955 · Talent Block A — four performances */
+import * as s04 from "./slides/04-talent-block-a";
+import * as s05 from "./slides/05-perf-pulang";
+import * as s06 from "./slides/06-perf-ditto";
+import * as s07 from "./slides/07-perf-everlong";
+import * as s08 from "./slides/08-perf-flashlight";
 
-/* Act 4: Musical Performance Block 2 */
-import * as s11 from "./slides/11-perf-song5";
-import * as s12 from "./slides/12-perf-song6";
-import * as s13 from "./slides/13-perf-song7";
-import * as s14 from "./slides/14-perf-song8";
+/* 1005 · The SWAG Tournament — three games, cumulative points */
+import * as s09 from "./slides/09-tournament-intro";
+import * as s10 from "./slides/10-game-inflatable-relay";
+import * as s11 from "./slides/11-game-ball-balance";
+import * as s12 from "./slides/12-game-shuttlecock-shuffle";
+import * as s13 from "./slides/13-tournament-podium";
 
-/* Act 5: Surprise PSG Dance */
-import * as s15 from "./slides/15-fake-ending";
-import * as s16 from "./slides/16-psg-dance";
+/* 1020 · Honor & Recognition — Teacher Awards */
+import * as s14 from "./slides/14-teacher-awards";
 
-/* Act 6 & 7: Coaches Tribute & Cinematic Movie End Credits */
-import * as s17 from "./slides/17-coaches-tribute";
-import * as s18 from "./slides/18-end-credits";
+/* 1022 · Talent Block B — four more performances */
+import * as s15 from "./slides/15-perf-best-part";
+import * as s16 from "./slides/16-perf-the-nights";
+import * as s17 from "./slides/17-perf-still-into-you";
+import * as s18 from "./slides/18-perf-untuk-dia";
+
+/* 1025 · Grand Finale — fake ending glitch → PSG dance */
+import * as s19 from "./slides/19-fake-ending";
+import * as s20 from "./slides/20-psg-dance";
+
+/* Closing — tribute + cinematic credits roll */
+import * as s21 from "./slides/21-coaches-tribute";
+import * as s22 from "./slides/22-end-credits";
 
 export const deck: SlideModule[] = [
   s01,
@@ -52,6 +61,10 @@ export const deck: SlideModule[] = [
   s16,
   s17,
   s18,
+  s19,
+  s20,
+  s21,
+  s22,
 ];
 
 export const eventTitle = "TEACHERS' DAY '26 — SUIT UP! SHOW UP! SPORT IT UP!";
