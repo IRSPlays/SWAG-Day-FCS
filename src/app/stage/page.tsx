@@ -2,13 +2,12 @@
 
 /* /stage — the presentation machine. Fullscreen, zero clutter.
    Keyboard: ←/→/SPACE navigate · ESC or B blackout · C camera ·
-   Q QR badge · F fullscreen. Audio commands from the controller
+   F fullscreen. Audio commands from the controller
    execute HERE (this machine is patched into the PA). */
 
 import { useEffect, useState } from "react";
 import DeckPlayer from "@/engine/DeckPlayer";
 import ReactionLayer from "@/components/ReactionLayer";
-import QrBadge from "@/components/QrBadge";
 import Countdown from "@/components/Countdown";
 import CameraWindow from "@/components/CameraWindow";
 import { useShow } from "@/store/show";
@@ -22,7 +21,6 @@ export default function StagePage() {
   const index = useShow((s) => s.index);
   const dir = useShow((s) => s.dir);
   const blackout = useShow((s) => s.blackout);
-  const qrOn = useShow((s) => s.qrOn);
   const cameraOn = useShow((s) => s.cameraOn);
   const timerEndsAt = useShow((s) => s.timerEndsAt);
   const deckList = useEffectiveDeck();
@@ -54,8 +52,6 @@ export default function StagePage() {
         dispatch({ type: "toggle", key: "blackout", on: !useShow.getState().blackout });
       } else if (e.code === "KeyC") {
         dispatch({ type: "toggle", key: "cameraOn", on: !useShow.getState().cameraOn });
-      } else if (e.code === "KeyQ") {
-        dispatch({ type: "toggle", key: "qrOn", on: !useShow.getState().qrOn });
       } else if (e.code === "KeyF") {
         if (document.fullscreenElement) void document.exitFullscreen();
         else void document.documentElement.requestFullscreen();
@@ -75,7 +71,6 @@ export default function StagePage() {
       {/* always mounted: multi-camera hub keeps every phone connected so the
           controller's cam-active cuts are instant */}
       <CameraWindow />
-      {qrOn && !blackout && <QrBadge className="absolute bottom-8 right-8 z-40" />}
       {timerEndsAt && !blackout && (
         <Countdown endsAt={timerEndsAt} className="absolute left-8 top-8 z-40" />
       )}

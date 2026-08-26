@@ -37,9 +37,7 @@ export const sections = [
 ];
 
 export const performers = [
-  { role: "GUITAR & VOCALS", names: ["Student Rock Band"] },
-  { role: "DRUMS", names: ["Drummer"] },
-  { role: "BASS", names: ["Bassist"] },
+  { role: "VOCALS & GUITAR", names: ["Qaisarah"] },
 ];
 
 export default function PerfEverlong() {

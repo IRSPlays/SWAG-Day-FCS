@@ -8,8 +8,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import DeckPlayer from "@/engine/DeckPlayer";
-import { QRCodeSVG } from "qrcode.react";
-import { useShow } from "@/store/show";
+import { useShow, useSlideContent } from "@/store/show";
 import { useEffectiveDeck, useDeckIds } from "@/store/deckSelect";
 import { deck } from "@/slides/deck";
 import { PADS } from "@/audio/soundboard";
@@ -67,7 +66,6 @@ export default function ControllerPage() {
   const index = useShow((s) => s.index);
   const dir = useShow((s) => s.dir);
   const blackout = useShow((s) => s.blackout);
-  const qrOn = useShow((s) => s.qrOn);
   const cameraOn = useShow((s) => s.cameraOn);
   const activeCam = useShow((s) => s.activeCam);
   const camLayout = useShow((s) => s.camLayout ?? "pip");
@@ -130,10 +128,6 @@ export default function ControllerPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [index, deckList.length, dispatch]);
 
-  const [audienceUrl, setAudienceUrl] = useState<string | null>(null);
-  useEffect(() => {
-    setAudienceUrl(`${window.location.origin}/audience`);
-  }, []);
   return (
     <div className="flex min-h-screen flex-col bg-court text-ice">
       {/* header */}
@@ -201,7 +195,6 @@ export default function ControllerPage() {
           <div className="flex flex-wrap items-center gap-3">
             {(
               [
-                ["qrOn", qrOn, "QR BADGE"],
                 ["cameraOn", cameraOn, "STAGE CAM"],
                 ["pollOpen", pollOpen, "OPEN VOTING"],
                 ["surveyOpen", surveyOpen, "SURVEY"],
@@ -517,26 +510,6 @@ export default function ControllerPage() {
                   </div>
                 );
               })}
-            </div>
-          </div>
-
-          {/* audience QR */}
-          <div className="flex items-center gap-5 border-2 border-ice/10 bg-panel/60 p-4">
-            <div className="bg-ice p-2">
-              {audienceUrl ? (
-                <QRCodeSVG value={audienceUrl} size={130} bgColor="#f4f7ff" fgColor="#08060f" />
-              ) : (
-                <div className="h-[130px] w-[130px]" />
-              )}
-            </div>
-            <div>
-              <div className="font-body text-[13px] font-bold tracking-[0.3em] text-volt">
-                AUDIENCE JOIN
-              </div>
-              <p className="mt-1 font-body text-[13px] text-ice/60">
-                Phones scan → react, vote, survey. Zero login. Syncs across tabs locally; across
-                devices once Supabase keys are set.
-              </p>
             </div>
           </div>
         </section>

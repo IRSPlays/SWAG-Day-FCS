@@ -37,8 +37,7 @@ export const sections = [
 ];
 
 export const performers = [
-  { role: "SOLO VOCALS", names: ["Vocalist"] },
-  { role: "ACOUSTIC GUITAR", names: ["Guitarist"] },
+  { role: "SOLO VOCALS", names: ["Kylie Natalia"] },
 ];
 
 export default function PerfFlashlight() {
@@ -59,7 +58,7 @@ export default function PerfFlashlight() {
         header={header}
         bpm={72}
         accent="volt"
-        cover="/covers/everlong.jpg"
+        cover="/covers/flashlight.jpg"
         audio="/audio/flashlight.flac"
         sections={sections}
         credits={performers}

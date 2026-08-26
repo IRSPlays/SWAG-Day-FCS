@@ -1,11 +1,12 @@
 "use client";
 
 /* 03 · THE WALKWAY: SPORTS EDITION — runway beat, teachers walk the aisle.
-    High-fashion split runway visual with team cheer-off slabs. */
+   Full-bleed centre runway with vanishing-point lane lines and a bottom
+   look-strip. No side columns — reads as a stage floor, not a dashboard. */
 
 import { motion } from "motion/react";
 import SlideShell, { LiveBug, TickerBand } from "@/layouts/SlideShell";
-import { LetterStagger, ClipWipeReveal } from "@/animations";
+import { LetterStagger } from "@/animations";
 import { useSlideContent } from "@/store/show";
 import type { SlideMeta } from "../types";
 
@@ -21,16 +22,11 @@ export const meta: SlideMeta = {
 
 export const content = {
   kicker: "RUNWAY OF CHAMPIONS",
-  titleTop: "THE",
-  titleBottom: "WALKWAY",
-  serif: "Teachers own the aisle. Sport it up!",
-  prompt: "WHAT SPORT IS IT? SCREAM YES!",
-  sports: [
-    { tag: "LOOK 01", sport: "BADMINTON", cue: "SCREAM YES!" },
-    { tag: "LOOK 02", sport: "BASKETBALL", cue: "MAKE SOME NOISE" },
-    { tag: "LOOK 03", sport: "FOOTBALL", cue: "GOOOAL" },
-    { tag: "FINAL LOOK", sport: "FULL SWAG KIT", cue: "ON YOUR FEET" },
-  ],
+  titleTop: "THE WALKWAY",
+  titleBottom: "SPORTS EDITION",
+  promptLeft: "WHAT SPORT IS IT?",
+  promptRight: "SCREAM YES!",
+  looks: ["LOOK 01 · BADMINTON", "LOOK 02 · BASKETBALL", "LOOK 03 · FOOTBALL", "FINAL LOOK · FULL SWAG KIT"],
   ticker: [
     "THE RUNWAY OF CHAMPIONS",
     "SUIT UP! SHOW UP! SPORT IT UP!",
@@ -45,21 +41,42 @@ export default function Walkway() {
 
   return (
     <SlideShell className="bg-[#0a0410]">
-      {/* glowing runway strip down the middle of the frame */}
-      <div className="pointer-events-none absolute inset-0 z-0 flex justify-center">
+      {/* ---------- vanishing-point runway floor (full bleed) ---------- */}
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-[104px] top-[90px] z-0 overflow-hidden"
+        style={{ perspective: "700px" }}
+      >
+        {/* the runway plane receding to the horizon */}
         <motion.div
-          initial={{ scaleY: 0 }}
-          animate={{ scaleY: 1 }}
-          transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
-          className="h-full w-[340px] origin-top bg-gradient-to-b from-mag/40 via-vio/15 to-transparent"
-          style={{ clipPath: "polygon(18% 0, 82% 0, 100% 100%, 0 100%)" }}
-        />
-        <div
-          className="absolute top-0 h-full w-[340px] opacity-60"
+          initial={{ rotateX: 0 }}
+          animate={{ rotateX: 62 }}
+          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+          className="absolute inset-x-[-60%] bottom-[-10%] h-[160%] origin-bottom"
           style={{
-            clipPath: "polygon(18% 0, 82% 0, 100% 100%, 0 100%)",
             background:
-              "repeating-linear-gradient(0deg, transparent 0 60px, rgba(255,255,255,0.08) 60px 64px)",
+              "repeating-linear-gradient(0deg, rgba(255,61,166,0.16) 0 6px, transparent 6px 110px), linear-gradient(to bottom, rgba(143,107,255,0.10), rgba(255,61,166,0.22))",
+            transformStyle: "preserve-3d",
+          }}
+        />
+        {/* side lane chevrons */}
+        <motion.div
+          animate={{ opacity: [0.35, 0.7, 0.35] }}
+          transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute left-1/2 top-0 h-full w-[420px] -translate-x-1/2"
+          style={{
+            clipPath: "polygon(46% 0, 54% 0, 92% 100%, 8% 100%)",
+            borderLeft: "3px solid rgba(255,210,63,0.5)",
+            borderRight: "3px solid rgba(255,210,63,0.5)",
+            background:
+              "linear-gradient(to bottom, rgba(255,210,63,0.06), rgba(255,61,166,0.14))",
+          }}
+        />
+        {/* horizon glow */}
+        <div
+          className="absolute inset-x-0 top-0 h-40"
+          style={{
+            background:
+              "radial-gradient(60% 100% at 50% 0%, rgba(255,61,166,0.35), transparent 70%)",
           }}
         />
       </div>
@@ -75,80 +92,63 @@ export default function Walkway() {
         </div>
       </div>
 
-      {/* left: giant typography */}
-      <div className="absolute left-16 top-[20%] z-10 max-w-[900px]">
-        <ClipWipeReveal delay={0.1}>
-          <div className="inline-block -rotate-2 border-2 border-mag bg-mag/20 px-5 py-2 font-mono text-[15px] font-bold tracking-[0.4em] text-mag backdrop-blur-md">
-            {c.kicker}
-          </div>
-        </ClipWipeReveal>
-
-        <h1 className="mt-4 font-display uppercase leading-[0.82] tracking-tighter text-ice">
-          <span className="block text-[170px]">
-            <LetterStagger text={c.titleTop} delay={0.25} />
+      {/* centred title floating over the runway */}
+      <div className="pointer-events-none absolute inset-x-0 top-[16%] z-10 text-center">
+        <motion.h1
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.25, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+          className="font-display uppercase leading-[0.84] tracking-tighter"
+        >
+          <span className="block text-[120px] text-ice drop-shadow-[0_6px_24px_rgba(0,0,0,0.8)]">
+            <LetterStagger text={c.titleTop} delay={0.35} />
           </span>
-          <span className="block -skew-x-6 text-[190px] text-mag">
-            <LetterStagger text={c.titleBottom} delay={0.45} />
+          <span className="block skew-x-[-6deg] text-[86px] text-mag drop-shadow-[0_6px_24px_rgba(0,0,0,0.8)]">
+            {c.titleBottom}
           </span>
-        </h1>
-
-        <ClipWipeReveal delay={0.7} from="left">
-          <p className="mt-3 font-serifit text-[40px] italic text-ice/85">{c.serif}</p>
-        </ClipWipeReveal>
-
-        <ClipWipeReveal delay={0.95}>
-          <div className="mt-7 inline-block border-l-8 border-volt bg-panel/90 px-6 py-3 backdrop-blur-md">
-            <div className="font-mono text-[13px] font-bold tracking-[0.35em] text-volt">
-              CROWD GAME
-            </div>
-            <div className="mt-1 font-display text-[30px] font-black uppercase tracking-wide text-ice">
-              {c.prompt}
-            </div>
-          </div>
-        </ClipWipeReveal>
+        </motion.h1>
       </div>
 
-      {/* right: the look cards */}
-      <div className="absolute right-14 top-[16%] z-10 flex w-[560px] flex-col gap-5">
-        {c.sports.map((s, idx) => (
-          <motion.div
-            key={s.tag}
-            initial={{ x: 80, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.4 + idx * 0.22, duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
-            className={`relative overflow-hidden border-l-8 bg-panel/90 px-7 py-5 shadow-2xl backdrop-blur-xl ${
-              idx === c.sports.length - 1 ? "border-mag" : "border-volt"
+      {/* crowd-game prompts pinned mid-left and mid-right over the runway */}
+      <motion.div
+        initial={{ x: -70, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ delay: 0.9, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        className="absolute left-12 top-[52%] z-20 -rotate-2 border-l-8 border-volt bg-court/85 px-6 py-4 backdrop-blur-md"
+      >
+        <div className="font-mono text-[13px] font-bold tracking-[0.35em] text-volt">MC ASKS</div>
+        <div className="mt-1 font-display text-[36px] font-black uppercase leading-none text-ice">
+          {c.promptLeft}
+        </div>
+      </motion.div>
+      <motion.div
+        initial={{ x: 70, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ delay: 1.05, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        className="absolute right-12 top-[58%] z-20 rotate-2 border-l-8 border-mag bg-court/85 px-6 py-4 backdrop-blur-md"
+      >
+        <div className="font-mono text-[13px] font-bold tracking-[0.35em] text-mag">HALL ANSWERS</div>
+        <div className="mt-1 font-display text-[44px] font-black uppercase leading-none text-mag">
+          {c.promptRight}
+        </div>
+      </motion.div>
+
+      {/* bottom look strip above the ticker */}
+      <div className="absolute inset-x-0 bottom-[104px] z-20 flex justify-center gap-4 px-10">
+        {c.looks.map((look, idx) => (
+          <motion.span
+            key={look}
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 1.2 + idx * 0.15, duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+            className={`border px-5 py-2 font-mono text-[14px] font-bold tracking-[0.22em] backdrop-blur-md ${
+              idx === c.looks.length - 1
+                ? "border-mag bg-mag/20 text-mag"
+                : "border-ice/25 bg-court/80 text-ice/75"
             }`}
           >
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-[13px] font-bold tracking-[0.35em] text-ice/50">
-                {s.tag}
-              </span>
-              <span className="font-mono text-[13px] font-bold tracking-[0.3em] text-mag">
-                {s.cue}
-              </span>
-            </div>
-            <div className="mt-2 font-display text-[56px] font-black uppercase leading-none tracking-tight text-ice">
-              {s.sport}
-            </div>
-            {/* equalizer strip */}
-            <div className="mt-4 flex h-2 items-end gap-1">
-              {Array.from({ length: 24 }).map((_, i) => (
-                <motion.div
-                  key={i}
-                  animate={{ scaleY: [0.25, 1, 0.4, 0.9, 0.2] }}
-                  transition={{
-                    duration: 0.55 + (i % 4) * 0.13,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                    delay: (i % 6) * 0.07,
-                  }}
-                  className="h-full w-full origin-bottom rounded-sm"
-                  style={{ background: idx === c.sports.length - 1 ? "#ff3da6" : "#23dcff" }}
-                />
-              ))}
-            </div>
-          </motion.div>
+            {look}
+          </motion.span>
         ))}
       </div>
 

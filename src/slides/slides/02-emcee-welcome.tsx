@@ -1,10 +1,12 @@
 "use client";
 
-/* 02 · WELCOME & HOUSEKEEPING — ticket-stub layout. */
+/* 02 · GRAND OPENING — "WHAT IS UP, ADMIRALTY!"
+   Emcee intro splash: giant shouted lines, mic-drop energy, theme banner.
+   Unique layout: full-bleed centre shout stack + bottom dual-emcee bar. */
 
-import SlideShell, { CourtLines } from "@/layouts/SlideShell";
-import { LetterStagger, ClipWipeReveal, JerseyPop } from "@/animations";
-import { at } from "@/motion/choreography";
+import { motion } from "motion/react";
+import SlideShell, { CourtLines, LiveBug } from "@/layouts/SlideShell";
+import { LetterStagger } from "@/animations";
 import { useSlideContent } from "@/store/show";
 import type { SlideMeta } from "../types";
 
@@ -14,74 +16,115 @@ export const meta: SlideMeta = {
   transition: "baton-change",
   durationHint: 14,
   notes:
-    "Najwa: 'WHAT IS UP, ADMIRALTY! Welcome to SWAG DAY 2026!' Rayyan: 'I can't hear you! ARE YOU READY? Suit Up, Show Up, Sport it Up!' Keep up while the hall settles.",
-  accent: "vio",
+    "Najwa: 'WHAT IS UP, ADMIRALTY! Welcome to SWAG DAY 2026!' Rayyan: 'I can't hear you! I said, ARE YOU READY? Today we Suit Up, Show Up and Sport it Up! We are your hosts, Najwa and Rayyan!'",
+  accent: "mag",
 };
 
 export const content = {
-  kicker: "BEFORE THE WHISTLE",
-  titleTop: "WELCOME TO",
-  titleBottom: "THE RALLY",
-  rows: [
-    { n: "01", text: "ATHLETES (THAT'S THE STUDENTS) TAKE THE COURT AT 8:45" },
-    { n: "02", text: "HYDRATION STATION BY THE BENCHES — TEACHERS FIRST" },
-    { n: "03", text: "CHEER SQUADS TO THE EAST STAND. BRING THE NOISE." },
+  shout1: "WHAT IS UP,",
+  shout2: "ADMIRALTY!",
+  shout3: "ARE YOU READY?",
+  themeLine: "SUIT UP! SHOW UP! SPORT IT UP!",
+  yearBadge: "SWAG DAY 2026",
+  emcees: [
+    { name: "NAJWA", role: "YOUR HOST" },
+    { name: "RAYYAN", role: "YOUR HOST" },
   ],
-  ticketTop: "SWAG DAY '26 · COURTSIDE",
-  ticketTitle: "Admit One",
-  ticketSerif: "all teachers. every event. no exceptions.",
 };
 
-export default function Welcome() {
+export default function EmceeWelcome() {
   const c = useSlideContent(meta.id, content);
-  const rowDelay = at(0.6, 0.18);
+
   return (
-    <SlideShell>
+    <SlideShell className="bg-[#08030d]">
       <CourtLines />
 
-      <div className="absolute left-16 top-[16%] z-10 max-w-[1120px]">
-        <ClipWipeReveal>
-          <span className="font-body text-[26px] font-bold tracking-[0.42em] text-volt">
-            {c.kicker}
-          </span>
-        </ClipWipeReveal>
-
-        <h2 className="mt-6 font-display uppercase leading-[0.9] text-ice">
-          <LetterStagger text={c.titleTop} delay={0.15} className="block text-[148px]" />
-          <LetterStagger text={c.titleBottom} delay={0.42} className="block text-[148px] text-volt" />
-        </h2>
-
-        <div className="mt-14 flex flex-col gap-7">
-          {c.rows.map((r, i) => (
-            <ClipWipeReveal key={r.n} delay={rowDelay(i)} from="left">
-              <div className="flex items-baseline gap-7">
-                <span className="font-display text-[46px] leading-none text-mag">{r.n}</span>
-                <span className="font-body text-[33px] font-medium tracking-[0.08em] text-ice/90">
-                  {r.text}
-                </span>
-              </div>
-            </ClipWipeReveal>
-          ))}
-        </div>
+      {/* top live bug row */}
+      <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-between border-b-2 border-ice/10 px-14 py-4">
+        <LiveBug label="GRAND OPENING" />
+        <span className="font-mono text-[16px] font-bold tracking-[0.4em] text-volt">
+          {c.yearBadge}
+        </span>
       </div>
 
-      <JerseyPop delay={0.5} rotate={5} className="absolute right-24 top-1/2 z-10 -translate-y-1/2">
-        <div className="relative w-[560px] rotate-[-4deg] bg-ice text-court shadow-[18px_18px_0_rgba(0,0,0,0.35)]">
-          <span className="absolute -left-6 top-1/2 h-12 w-12 -translate-y-1/2 rounded-full bg-court" />
-          <span className="absolute -right-6 top-1/2 h-12 w-12 -translate-y-1/2 rounded-full bg-court" />
+      {/* rotated megaphone rays behind the shout */}
+      <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center overflow-hidden opacity-[0.55]">
+        <motion.div
+          animate={{ rotate: [0, 2, -2, 0] }}
+          transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+          className="h-[160%] w-[130%]"
+          style={{
+            background:
+              "conic-gradient(from 180deg at 50% 42%, transparent 0deg, rgba(255,61,166,0.12) 12deg, transparent 24deg, rgba(35,220,255,0.10) 38deg, transparent 50deg, rgba(255,210,63,0.08) 66deg, transparent 78deg)",
+          }}
+        />
+      </div>
 
-          <div className="border-b-4 border-dashed border-court/70 px-10 py-6">
-            <div className="font-body text-[20px] font-bold tracking-[0.38em]">{c.ticketTop}</div>
-          </div>
+      {/* centre shout stack */}
+      <div className="relative z-10 flex h-full flex-col items-center justify-center pb-24 text-center">
+        <motion.h1
+          initial={{ scale: 0.85, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.15, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          className="font-display uppercase leading-[0.84] tracking-tighter"
+        >
+          <LetterStagger text={c.shout1} delay={0.25} className="block text-[124px] text-ice" />
+          <LetterStagger
+            text={c.shout2}
+            delay={0.5}
+            className="block skew-x-[-6deg] text-[190px] text-mag"
+          />
+        </motion.h1>
 
-          <div className="px-10 py-8">
-            <div className="font-display text-[88px] uppercase leading-[0.9]">{c.ticketTitle}</div>
-            <div className="mt-5 font-serifit text-[30px] italic text-court/80">{c.ticketSerif}</div>
-          </div>
+        <motion.div
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ delay: 0.9, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="mt-6 h-2 w-[560px] origin-center bg-gradient-to-r from-transparent via-volt to-transparent"
+        />
 
-          <div className="barcode mx-10 mb-9 h-14 text-court/80" />
-        </div>
-      </JerseyPop>
+        <motion.p
+          initial={{ y: 40, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 1.05, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          className="mt-7 font-display text-[96px] font-black uppercase leading-none tracking-tight text-volt"
+        >
+          {c.shout3}
+        </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, letterSpacing: "0.9em" }}
+          animate={{ opacity: 1, letterSpacing: "0.45em" }}
+          transition={{ delay: 1.3, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          className="mt-8 border-2 border-mag/60 bg-mag/10 px-8 py-3 font-body text-[26px] font-bold uppercase text-mag backdrop-blur-md"
+        >
+          {c.themeLine}
+        </motion.div>
+      </div>
+
+      {/* bottom dual-emcee bar — unique to this slide */}
+      <div className="absolute inset-x-0 bottom-0 z-20 flex justify-center gap-6 border-t-2 border-ice/10 bg-court/85 py-5 backdrop-blur-md">
+        {c.emcees.map((m, i) => (
+          <motion.div
+            key={m.name}
+            initial={{ y: 46, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 1.5 + i * 0.18, duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+            className="flex min-w-[420px] items-center gap-5 border-l-8 px-8 py-2"
+            style={{ borderColor: i === 0 ? "#ff3da6" : "#23dcff" }}
+          >
+            <span className="text-[42px] leading-none">{i === 0 ? "🎤" : "🎙️"}</span>
+            <div>
+              <div className="font-display text-[38px] font-black uppercase leading-none text-ice">
+                {m.name}
+              </div>
+              <div className="mt-1 font-mono text-[13px] font-bold tracking-[0.35em] text-ice/55">
+                {m.role}
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
     </SlideShell>
   );
 }

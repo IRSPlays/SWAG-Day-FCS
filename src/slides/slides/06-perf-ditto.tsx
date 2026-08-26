@@ -35,7 +35,7 @@ export const sections = [
 ];
 
 export const performers = [
-  { role: "VOCALS & DANCE", names: ["Student Dance Crew"] },
+  { role: "VOCALS & DANCE", names: ["Raien"] },
 ];
 
 export default function PerfDitto() {

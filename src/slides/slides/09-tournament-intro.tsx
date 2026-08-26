@@ -6,8 +6,7 @@
 import { motion } from "motion/react";
 import SlideShell, { CourtLines, LiveBug, TickerBand } from "@/layouts/SlideShell";
 import { LetterStagger, ClipWipeReveal } from "@/animations";
-import { useSlideContent, useShow } from "@/store/show";
-import { QRCodeSVG } from "qrcode.react";
+import { useSlideContent } from "@/store/show";
 import type { SlideMeta } from "../types";
 
 export const meta: SlideMeta = {
@@ -25,10 +24,16 @@ export const content = {
   titleTop: "COHORT",
   titleBottom: "CLASH",
   serif: "Teachers take the court. Cohorts bring the noise.",
+  cohorts: [
+    { id: "sec1", num: "01", name: "TITANS", label: "SEC 1 · LOUDEST CROWD WINS", color: "#23dcff" },
+    { id: "sec2", num: "02", name: "CYCLONES", label: "SEC 2 · LOUDEST CROWD WINS", color: "#ff3da6" },
+    { id: "sec3", num: "03", name: "VIPERS", label: "SEC 3 · LOUDEST CROWD WINS", color: "#ffd23f" },
+    { id: "sec4", num: "04", name: "APEX", label: "SEC 4 & STAFF · LOUDEST CROWD WINS", color: "#8f6bff" },
+  ],
   rules: [
-    { n: "01", title: "2 GAUNTLET GAMES", tag: "INFLATABLE RELAY · BALL BALANCE" },
-    { n: "02", title: "SPEED & AGILITY", tag: "+3 PTS 1ST · +2 PTS 2ND · +1 PT 3RD" },
-    { n: "03", title: "AUDIENCE LIVE VOTE", tag: "SCAN TO VOTE MVP & SEND REACTIONS" },
+    { n: "01", title: "3 GAUNTLET GAMES", tag: "RELAY · BALANCE BLITZ · SHUTTLECOCK" },
+    { n: "02", title: "CUMULATIVE POINTS", tag: "+3 PTS 1ST · +2 PTS 2ND · +1 PT 3RD" },
+    { n: "03", title: "CHEER-OFF BEFORE EACH GAME", tag: "SEC 1 · SEC 2 · SEC 3 · SEC 4" },
   ],
   ticker: [
     "COHORT CLASH HAS BEGUN",
@@ -43,7 +48,6 @@ export const content = {
 
 export default function TournamentIntro() {
   const c = useSlideContent(meta.id, content);
-  const qrOn = useShow((s) => s.qrOn);
 
   return (
     <SlideShell className="bg-[#05030c]">
@@ -107,7 +111,7 @@ export default function TournamentIntro() {
           </div>
         </div>
 
-        {/* right column: giant stadium match ticket pass with live QR */}
+        {/* right column: giant stadium match ticket pass */}
         <motion.div
           initial={{ scale: 0.85, opacity: 0, x: 50 }}
           animate={{ scale: 1, opacity: 1, x: 0 }}
@@ -117,34 +121,39 @@ export default function TournamentIntro() {
           {/* top ticket header */}
           <div className="flex items-center justify-between border-b-2 border-dashed border-ice/20 pb-4">
             <span className="font-mono text-[13px] font-bold tracking-[0.3em] text-mag">
-              AUDIENCE MATCH PASS
+              COHORT CLASH
             </span>
             <span className="font-mono text-[13px] font-bold tracking-[0.3em] text-ice/50">
               #TD26-ARENA
             </span>
           </div>
 
-          {/* QR Code section */}
-          <div className="mt-6 flex flex-col items-center">
-            <div className="border-4 border-court bg-white p-4 shadow-xl">
-              <QRCodeSVG
-                value={typeof window !== "undefined" ? `${window.location.origin}/audience` : "https://swagday.app/audience"}
-                size={220}
-                bgColor="#ffffff"
-                fgColor="#08060f"
-                level="Q"
-              />
-            </div>
-            <p className="mt-4 font-mono text-[14px] font-bold uppercase tracking-[0.3em] text-volt">
-              SCAN TO VOTE & REACT
-            </p>
-            <p className="mt-1 font-body text-[14px] font-medium text-ice/60">
-              Join live from your phone in the stands
-            </p>
+          {/* tournament roster */}
+          <div className="mt-6 flex flex-col gap-3">
+            {c.cohorts.map((cohort) => (
+              <div key={cohort.id} className="flex items-center gap-4 border-b border-ice/10 pb-3 last:border-b-0 last:pb-0">
+                <span className="font-display text-[34px] font-black leading-none" style={{ color: cohort.color }}>
+                  {cohort.num}
+                </span>
+                <div>
+                  <div className="font-display text-[28px] font-black uppercase leading-none text-ice">
+                    {cohort.name}
+                  </div>
+                  <div className="mt-1 font-mono text-[12px] font-bold tracking-[0.25em] text-ice/50">
+                    {cohort.label}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
 
+          {/* scoring reminder */}
+          <p className="mt-6 font-mono text-[13px] font-bold uppercase tracking-[0.3em] text-volt">
+            WINNER TAKES THE TROPHY
+          </p>
+
           {/* bottom ticket barcode */}
-          <div className="barcode mt-6 h-10 w-full text-ice/30" />
+          <div className="barcode mt-5 h-10 w-full text-ice/30" />
         </motion.div>
       </div>
 

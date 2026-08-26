@@ -19,7 +19,7 @@ export const meta: SlideMeta = {
 };
 
 export const content = {
-  kind: "ACOUSTIC SOUL DUET 05",
+  kind: "ACOUSTIC VOCAL SOLO 05",
   song: "BEST PART",
   artist: "DANIEL CAESAR & H.E.R.",
 };
@@ -39,7 +39,7 @@ export const sections = [
 ];
 
 export const performers = [
-  { role: "DUET VOCALS", names: ["Serena", "Airis"] },
+  { role: "VOCALS", names: ["Serena"] },
   { role: "CLASS", names: ["Phoenix 4"] },
 ];
 
