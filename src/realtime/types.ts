@@ -44,10 +44,28 @@ export type ShowEvent =
      phone's camId so several phones can stream into the stage at once. */
   | (Base & { type: "cam-hello"; camId: string })
   | (Base & { type: "cam-bye"; camId: string })
-  | (Base & { type: "cam-request" })
-  | (Base & { type: "cam-offer"; camId: string; sdp: RTCSessionDescriptionInit })
-  | (Base & { type: "cam-answer"; camId: string; sdp: RTCSessionDescriptionInit })
-  | (Base & { type: "cam-ice"; from: "phone" | "stage"; camId: string; candidate: RTCIceCandidateInit })
+  /* from = which viewer is asking (a broadcast heartbeat); omitted = legacy stage */
+  | (Base & { type: "cam-request"; from?: string })
+  /* Routing tags for multi-viewer broadcast: the PHONE offers to each viewer,
+     tagging the offer with to = viewerId. A viewer answers back with
+     to = camId (the phone) + from = viewerId, so the phone can apply the
+     answer to the right peer connection. Omitted tags behave exactly like
+     the legacy single-stage world ("stage"). */
+  | (Base & { type: "cam-offer"; camId: string; sdp: RTCSessionDescriptionInit; to?: string })
+  | (Base & {
+      type: "cam-answer";
+      camId: string;
+      sdp: RTCSessionDescriptionInit;
+      to?: string;
+      from?: string;
+    })
+  | (Base & {
+      type: "cam-ice";
+      from: string;
+      camId: string;
+      candidate: RTCIceCandidateInit;
+      to?: string;
+    })
   /* the controller selects which phone is cut to the stage screen */
   | (Base & { type: "cam-active"; camId: string | null })
   /* stage flagging that a camera's video is actually flowing */

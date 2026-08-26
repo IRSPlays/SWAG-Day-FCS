@@ -1,22 +1,26 @@
 "use client";
 
-/* /camera-ops — the dedicated CAMERA OPERATOR console.
-   A focused control surface for whoever runs the multi-camera broadcast:
-   - live roster of every phone that has joined (CAM 1, CAM 2, …)
-   - one-tap CUT to put a camera on the stage screen
-   - stage display on/off (cameraOn) + layout (PIP / FULLSCREEN / HIDDEN)
-   - live link + TURN diagnostics so a cross-network relay problem is
-     visible from the operator's seat instead of a black stage screen
+/* /camera-ops — the CAMERA OPERATOR console with a live MULTIVIEW.
+   Runs a second independent viewer ("ops-…") beside the stage's "stage"
+   viewer: every phone serves its stream to both simultaneously.
+   Each tile = one phone's live feed + minimal debug (state · ice · kbps).
 
-   The actual video renders on /stage (CameraWindow); this page drives it. */
+   This page does NOT report cam-status to the store (the stage owns that);
+   it uses useCamViewer for peers and the show store for CUT / layout
+   / on-air controls. */
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useShow } from "@/store/show";
-import { getTransport } from "@/realtime/transport";
-import { iceServers } from "@/realtime/rtc";
+import { useCamViewer } from "@/realtime/useCamViewer";
 
 const btn =
   "border-2 px-2 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wider transition-colors";
+
+interface TileStats {
+  state: string;
+  ice: string;
+  kbps: number;
+}
 
 export default function CameraOpsPage() {
   const init = useShow((s) => s.init);
@@ -27,23 +31,81 @@ export default function CameraOpsPage() {
   const cams = useShow((s) => s.cams);
   const transportKind = useShow((s) => s.transportKind);
 
+  /* stable per-tab viewer identity so the phone routes answers back here */
+  const opsIdRef = useRef<string>("");
+  if (!opsIdRef.current && typeof window !== "undefined") {
+    const key = "swag-day-cam-ops-viewer";
+    let id = localStorage.getItem(key);
+    if (!id) {
+      id = `ops-${Math.random().toString(36).slice(2, 8)}`;
+      localStorage.setItem(key, id);
+    }
+    opsIdRef.current = id;
+  }
+  const viewerId = opsIdRef.current || "ops";
+
+  const { mountVideo, peersRef } = useCamViewer({ viewerId });
+
+  const [tiles, setTiles] = useState<Record<string, TileStats>>({});
+  const prevBytesRef = useRef<Record<string, { bytes: number; ts: number; kbps?: number }>>({});
+
   useEffect(() => {
     init();
   }, [init]);
 
-  /* whether a TURN relay is actually configured, or we're on the unreliabile
-     public OpenRelay fallback — the whole reason cross-network can break */
+  /* per-tile debug: connection state, ICE state, measured bitrate */
+  useEffect(() => {
+    const iv = setInterval(() => {
+      const snapshot: Record<string, TileStats> = {};
+      peersRef.current.forEach((p, camId) => {
+        snapshot[camId] = {
+          state: p.pc.connectionState,
+          ice: p.pc.iceConnectionState,
+          kbps: prevBytesRef.current[camId]?.kbps ?? 0,
+        };
+      });
+      setTiles(snapshot);
+
+      peersRef.current.forEach(async (p, camId) => {
+        if (p.pc.connectionState !== "connected") return;
+        try {
+          const s = await p.pc.getStats();
+          let bytes = 0;
+          let ts = 0;
+          s.forEach((r) => {
+            if (r.type === "inbound-rtp" && !r.isRemote) {
+              bytes = r.bytesReceived ?? bytes;
+              ts = r.timestamp ?? ts;
+            }
+          });
+          let kbps = 0;
+          const prev = prevBytesRef.current[camId];
+          if (prev && prev.bytes > 0 && ts > prev.ts) {
+            kbps = Math.round(((bytes - prev.bytes) * 8) / ((ts - prev.ts) / 1000) / 1000);
+          }
+          prevBytesRef.current[camId] = { bytes, ts, kbps };
+        } catch {
+          /* stats unavailable mid-teardown — ignore */
+        }
+      });
+    }, 1000);
+  }, [peersRef]);
+
+  /* keep each camera's <video> mounted in its tile (runs after every render,
+     so newly created tiles grab their video element immediately) */
+  useEffect(() => {
+    peersRef.current.forEach((_p, camId) => {
+      mountVideo(camId, document.getElementById(`ops-tile-${camId}`));
+    });
+  });
+
   const relayMode = (() => {
     const urls = process.env.NEXT_PUBLIC_TURN_URLS;
     if (urls && urls.trim().split(",").filter(Boolean).length > 0) return "own";
     return "openrelay";
   })();
 
-  const linkTxt =
-    transportKind === "server" ? "SERVER LINK" : "LOCAL TABS LINK";
-
   const cut = (id: string) => {
-    /* putting a cam on air implies the broadcast system is on */
     dispatch({ type: "toggle", key: "cameraOn", on: true });
     dispatch({ type: "cam-active", camId: id });
   };
@@ -53,28 +115,24 @@ export default function CameraOpsPage() {
     if (mode !== "hidden") dispatch({ type: "toggle", key: "cameraOn", on: true });
   };
 
-  const camIds = Object.keys(cams);
-
   return (
-    <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-5 bg-court px-5 py-6 text-ice">
+    <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-4 bg-court px-5 py-6 text-ice">
       <header className="flex items-end justify-between border-b-2 border-ice/10 pb-3">
         <div>
           <div className="font-body text-[11px] font-bold tracking-[0.4em] text-mag">
-            CAMERA OPERATOR
+            CAMERA OPERATOR · MULTIVIEW
           </div>
           <h1 className="mt-1 font-display text-5xl uppercase leading-[0.9]">
             Broadcast <span className="text-volt">control</span>
           </h1>
         </div>
-        <div className="flex items-center gap-2 font-mono text-[11px] font-bold tracking-wider">
+        <div className="flex flex-wrap items-center justify-end gap-2 font-mono text-[11px] font-bold tracking-wider">
           <span
             className={`border px-2 py-0.5 ${
-              transportKind === "server"
-                ? "border-volt text-volt"
-                : "border-ice/30 text-ice/50"
+              transportKind === "server" ? "border-volt text-volt" : "border-ice/30 text-ice/50"
             }`}
           >
-            {linkTxt}
+            {transportKind === "server" ? "SERVER LINK" : "LOCAL TABS"}
           </span>
           <span
             className={`border px-2 py-0.5 ${
@@ -82,34 +140,32 @@ export default function CameraOpsPage() {
             }`}
             title={
               relayMode === "own"
-                ? "TURN relay configured — cross-network media relays through your coturn."
-                : "Using the public OpenRelay test relay — unreliable across different networks. Set NEXT_PUBLIC_TURN_* env vars."
+                ? "TURN relay configured."
+                : "Public OpenRelay fallback — unreliable across different networks."
             }
           >
-            {relayMode === "own" ? "TURN: OWN" : "TURN: FALLBACK"}
+            {relayMode === "own" ? "TURN OK" : "TURN FALLBACK"}
           </span>
         </div>
       </header>
 
-      {/* on-air / layout strip */}
+      {/* stage control strip */}
       <section className="grid gap-3 sm:grid-cols-2">
-        <div className="border-2 border-ice/15 bg-panel/50 p-4">
+        <div className="border-2 border-ice/15 bg-panel/50 p-3">
           <div className="font-mono text-[10px] font-bold tracking-[0.3em] text-ice/40">
             STAGE DISPLAY
           </div>
           <button
             onClick={() => dispatch({ type: "toggle", key: "cameraOn", on: !cameraOn })}
-            className={`mt-2 w-full border-2 py-3 font-display text-2xl uppercase transition-colors ${
-              cameraOn
-                ? "border-volt bg-volt text-court"
-                : "border-ice/20 text-ice/60 hover:border-ice/40 hover:text-ice"
+            className={`mt-2 w-full border-2 py-2.5 font-display text-xl uppercase ${
+              cameraOn ? "border-volt bg-volt text-court" : "border-ice/20 text-ice/60"
             }`}
           >
             {cameraOn ? "ON AIR" : "STAGE CAM OFF"}
           </button>
         </div>
 
-        <div className="border-2 border-ice/15 bg-panel/50 p-4">
+        <div className="border-2 border-ice/15 bg-panel/50 p-3">
           <div className="font-mono text-[10px] font-bold tracking-[0.3em] text-ice/40">
             STAGE LAYOUT
           </div>
@@ -118,77 +174,95 @@ export default function CameraOpsPage() {
               <button
                 key={m}
                 onClick={() => setLayout(m)}
-                className={`${btn} py-3 text-center ${
+                className={`${btn} py-2.5 text-center ${
                   camLayout === m && (cameraOn || m === "hidden")
                     ? "border-mag bg-mag/20 text-ice"
-                    : "border-ice/15 text-ice/60 hover:border-white/30"
+                    : "border-ice/15 text-ice/60"
                 }`}
               >
                 {m.toUpperCase()}
               </button>
             ))}
           </div>
-          <p className="mt-2 font-mono text-[10px] text-ice/40">
-            {camLayout === "hidden"
-              ? "Tucked off-screen. CUT a camera to bring it back."
-              : camLayout === "fullscreen"
-              ? "Full-frame on the stage screen."
-              : "Corner slide-up overlay."}
-          </p>
         </div>
       </section>
 
-      {/* live camera roster */}
-      <section className="border-2 border-ice/15 bg-panel/50 p-4">
-        <div className="font-mono text-[10px] font-bold tracking-[0.3em] text-ice/40">
-          LIVE CAMERAS
+      {/* live multiview grid */}
+      <section className="border-2 border-ice/15 bg-panel/50 p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="font-mono text-[10px] font-bold tracking-[0.3em] text-ice/40">
+            LIVE FEEDS ({Object.keys(cams).length})
+          </span>
+          <span className="font-mono text-[10px] text-ice/30">viewer: {viewerId}</span>
         </div>
 
-        {camIds.length === 0 && (
-          <div className="mt-3 border border-dashed border-ice/20 p-6 text-center">
-            <div className="font-display text-2xl uppercase text-ice/50">
-              No phones on the feed
-            </div>
+        {Object.keys(cams).length === 0 && (
+          <div className="border border-dashed border-ice/20 p-6 text-center">
+            <div className="font-display text-2xl uppercase text-ice/50">No phones on the feed</div>
             <p className="mt-2 font-body text-[13px] text-ice/50">
-              Someone opens <span className="font-mono text-volt">/camera</span> on a phone and taps
-              START BROADCAST. Phones can join from any network — but if they&apos;re not on the
-              stage&apos;s network, the media needs a working TURN relay.
+              Open <span className="font-mono text-volt">/camera</span> on a phone and tap START
+              BROADCAST. Feeds appear here automatically — each phone streams to this console AND
+              the stage at once.
             </p>
           </div>
         )}
 
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {Object.entries(cams).map(([id, cam]) => {
+            const st = tiles[id];
             const isActive = activeCam === id;
             return (
               <div
                 key={id}
-                className={`flex flex-col gap-3 border-2 p-3 transition-colors ${
-                  isActive ? "border-volt bg-volt/10" : "border-ice/10"
+                className={`flex flex-col overflow-hidden border-2 transition-colors ${
+                  isActive ? "border-volt" : "border-ice/10"
                 }`}
               >
-                <div className="flex items-center gap-2">
+                {/* video tile host — useCamViewer appends the persistent <video> here */}
+                <div
+                  id={`ops-tile-${id}`}
+                  className={`relative aspect-video bg-black ${
+                    isActive ? "ring-2 ring-inset ring-volt" : ""
+                  }`}
+                />
+
+                {/* label + minimal debug */}
+                <div className="flex items-center gap-2 px-2 py-1.5">
                   <span
-                    className={`h-2.5 w-2.5 rounded-full ${
-                      cam.live ? "animate-pulse bg-volt" : "bg-ice/30"
+                    className={`h-2 w-2 shrink-0 rounded-full ${
+                      st?.state === "connected"
+                        ? st.kbps > 0
+                          ? "animate-pulse bg-volt"
+                          : "bg-[#ffd23f]"
+                        : "bg-mag"
                     }`}
+                    title={
+                      st?.state === "connected"
+                        ? st.kbps > 0
+                          ? "connected, media flowing"
+                          : "peer connected but no media yet"
+                        : `state: ${st?.state ?? "no peer"} · ice: ${st?.ice ?? "-"}`
+                    }
                   />
-                  <span className="flex-1 font-display text-3xl uppercase">{cam.name}</span>
-                  <span
-                    className={`font-mono text-[10px] font-bold tracking-[0.2em] ${
-                      cam.live ? "text-volt" : "text-ice/50"
-                    }`}
-                  >
-                    {cam.live ? "STREAMING" : "CONNECTING"}
+                  <span className="flex-1 font-display text-lg uppercase leading-none">
+                    {cam.name}
+                    {!cam.live && (
+                      <span className="ml-1 font-mono text-[9px] text-ice/40">connecting</span>
+                    )}
+                  </span>
+                  <span className="font-mono text-[9px] tracking-wide text-ice/40">
+                    {st ? `${st.state}·${st.ice}${st.kbps ? `·${st.kbps}k` : ""}` : "no peer"}
                   </span>
                 </div>
 
                 <button
-                  onClick={() => (isActive ? dispatch({ type: "cam-active", camId: null }) : cut(id))}
-                  className={`${btn} py-2 ${
+                  onClick={() =>
+                    isActive ? dispatch({ type: "cam-active", camId: null }) : cut(id)
+                  }
+                  className={`${btn} border-x-0 border-b-0 py-2 ${
                     isActive
                       ? "border-volt bg-volt text-court"
-                      : "border-ice/30 text-ice hover:border-volt hover:text-volt"
+                      : "border-ice/10 text-ice hover:border-volt hover:text-volt"
                   }`}
                 >
                   {isActive ? "ON AIR · CUT OFF" : "CUT TO STAGE"}
@@ -199,11 +273,12 @@ export default function CameraOpsPage() {
         </div>
       </section>
 
-      {/* cross-network note */}
-      <footer className="border-t-2 border-ice/10 pt-3 font-mono text-[10px] leading-relaxed text-ice/40">
+      <footer className="mt-auto border-t-2 border-ice/10 pt-2 font-mono text-[10px] leading-relaxed text-ice/40">
+        Tile dot: mag = no peer · amber = peer up but no media · blinking volt = media flowing.
+        Hover for detail.
         {relayMode === "own"
-          ? "TURN relay configured — cameras can reach the stage from different networks."
-          : "No NEXT_PUBLIC_TURN_URLS set — falling back to the public OpenRelay relay. That is rehearsal-grade only, unreliable across different networks. Deploy your own coturn and set NEXT_PUBLIC_TURN_URLS/USERNAME/CREDENTIAL before show day."}
+          ? ""
+          : " TURN FALLBACK means cross-network media will NOT connect — deploy your own coturn."}
       </footer>
     </main>
   );

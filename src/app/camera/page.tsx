@@ -1,73 +1,78 @@
 "use client";
 
 /* /camera — a phone becomes one of SEVERAL live cameras for the stage screen.
-   WebRTC peer connection; the show transport carries the signaling.
-   The PHONE is always the offerer; the stage answers. Negotiation is
-   self-healing: on ICE failure or an unanswered offer the peer connection
-   is rebuilt and re-offered automatically.
-   A diagnostics HUD exposes the whole handshake so stalls are observable
-   on-device instead of invisible. */
+   WebRTC peer connections; the show transport carries the signaling.
+   The PHONE is always the offerer; every viewer answers:
+   - "stage"      → the projector machine (CameraWindow)
+   - "ops-…"      → /camera-ops multiview tiles
+   Offers carry to:<viewerId>, answers/ICE carry from:<viewerId> — so each
+   viewer gets its own peer connection without crosstalk.
+
+   Thermal notes (why this page stays cool for hours):
+   - The canvas repaints via requestVideoFrameCallback — only when the
+     camera actually delivers a frame (~30fps), NOT at display refresh rate
+     (60-120Hz rAF painting 1920x1080 = GPU burn = throttle = lag creep).
+   - Encode bitrate follows the selected quality, not one fixed value. */
 
 import { useEffect, useRef, useState, type TouchEvent as ReactTouchEvent } from "react";
 import { getTransport } from "@/realtime/transport";
 import { newEventId, type ShowEvent, type ShowEventInput } from "@/realtime/types";
 import { iceServers } from "@/realtime/rtc";
 
-
 const QUALITIES = [
   { id: "720p", label: "720p", w: 1280, h: 720, mbps: 2.5 },
   { id: "1080p", label: "1080p", w: 1920, h: 1080, mbps: 5 },
-  { id: "1440p", label: "1440p", w: 2560, h: 1440, mbps: 9 },
 ] as const;
 type QualityId = (typeof QUALITIES)[number]["id"];
 
 const ZOOM_MAX = 5;
-const REOFFER_COOLDOWN_MS = 8000; /* min gap between offer attempts */
+const REOFFER_COOLDOWN_MS = 8000; /* min gap between re-offers, PER viewer */
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+
+interface ViewerPc {
+  pc: RTCPeerConnection;
+  negotiating: boolean;
+  lastAttempt: number;
+}
 
 interface Diag {
   link: string;
-  pc: string;
-  ice: string;
+  viewers: number;   /* viewers with a connected peer */
   offers: number;
   answers: number;
   iceOut: number;
   iceIn: number;
-  queued: number;
 }
 
 export default function CameraPage() {
   const [status, setStatus] = useState<"idle" | "connecting" | "live" | "error">("idle");
-  const [quality, setQuality] = useState<QualityId>("1080p");
+  const [quality, setQuality] = useState<QualityId>("720p");
   const [facing, setFacing] = useState<"user" | "environment">("environment");
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [resBadge, setResBadge] = useState("");
   const [diag, setDiag] = useState<Diag>({
     link: "-",
-    pc: "-",
-    ice: "-",
+    viewers: 0,
     offers: 0,
     answers: 0,
     iceOut: 0,
     iceIn: 0,
-    queued: 0,
   });
 
   const camIdRef = useRef("");
   const srcVideoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const pcRef = useRef<RTCPeerConnection | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const cStreamRef = useRef<MediaStream | null>(null);
-  const unsubRef = useRef<(() => void) | null>(null);
-  const rafRef = useRef(0);
-  const pendingIceRef = useRef<RTCIceCandidateInit[]>([]);
-  const negotiatingRef = useRef(false);
-  const lastAttemptRef = useRef(0);
-  const answeredRef = useRef(false);
   const trackRef = useRef<MediaStreamTrack | null>(null);
-  const cStreamRefForPc = useRef<MediaStream | null>(null);
+  /* one peer connection per viewer */
+  const peersRef = useRef<Map<string, ViewerPc>>(new Map());
+  const unsubRef = useRef<(() => void) | null>(null);
+
+  /* frame-driven paint scheduling */
+  const paintScheduledRef = useRef(false);
+  const paintTimerRef = useRef(0);
 
   const zoomRef = useRef(1);
   const panRef = useRef({ x: 0, y: 0 });
@@ -81,12 +86,25 @@ export default function CameraPage() {
 
   const patchDiag = (p: Partial<Diag>) => setDiag((d) => ({ ...d, ...p }));
 
-  /* live link status - SERVER the moment WS or the HTTP fallback connects */
+  /* live link status */
   useEffect(() => {
     const t = getTransport();
     patchDiag({ link: t.kind });
     return t.onStatus((kind) => patchDiag({ link: kind }));
   }, []);
+
+  /* count how many viewer peers are actually carrying media */
+  useEffect(() => {
+    if (status !== "live" && status !== "connecting") return;
+    const iv = setInterval(() => {
+      let connected = 0;
+      peersRef.current.forEach((v) => {
+        if (v.pc.connectionState === "connected") connected += 1;
+      });
+      patchDiag({ viewers: connected });
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [status]);
 
   const setZoomBoth = (v: number) => {
     const z = clamp(v, 1, ZOOM_MAX);
@@ -94,31 +112,53 @@ export default function CameraPage() {
     setZoom(z);
   };
 
-  const drawLoop = () => {
+  /* -------- paint ONLY when the camera delivers a new frame --------
+     rVFC fires at the camera's native cadence (~30fps). A 1s fallback timer
+     covers browsers without requestVideoFrameCallback. This single change
+     is what stops the phone cooking itself on a long broadcast. */
+  const paintFrame = () => {
+    paintScheduledRef.current = false;
     const canvas = canvasRef.current;
     const video = srcVideoRef.current;
-    if (canvas && video && video.videoWidth > 0 && video.videoHeight > 0) {
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        const W = canvas.width;
-        const H = canvas.height;
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        const z = zoomRef.current;
-        const scale = Math.max(W / video.videoWidth, H / video.videoHeight) * z;
-        const dw = video.videoWidth * scale;
-        const dh = video.videoHeight * scale;
-        const ox = (W - dw) / 2 + (panRef.current.x * (W - dw)) / 2;
-        const oy = (H - dh) / 2 + (panRef.current.y * (H - dh)) / 2;
-        /* only clear when the frame doesn't fully cover the canvas (zoomed
-           out with letterboxing). When it fills, a re-draw is enough. */
-        if (ox > 0 || oy > 0 || dw < W || dh < H) {
-          ctx.fillStyle = "#000";
-          ctx.fillRect(0, 0, W, H);
-        }
-        ctx.drawImage(video, ox, oy, dw, dh);
-      }
+    if (!canvas || !video || video.videoWidth === 0) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const W = canvas.width;
+    const H = canvas.height;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const z = zoomRef.current;
+    const scale = Math.max(W / video.videoWidth, H / video.videoHeight) * z;
+    const dw = video.videoWidth * scale;
+    const dh = video.videoHeight * scale;
+    const ox = (W - dw) / 2 + (panRef.current.x * (W - dw)) / 2;
+    const oy = (H - dh) / 2 + (panRef.current.y * (H - dh)) / 2;
+    /* clear only when letterboxed (zoom < cover); else redraw covers all */
+    if (ox > 0 || oy > 0 || dw < W || dh < H) {
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, W, H);
     }
-    rafRef.current = requestAnimationFrame(drawLoop);
+    ctx.drawImage(video, ox, oy, dw, dh);
+  };
+
+  const schedulePaint = () => {
+    if (paintScheduledRef.current) return;
+    paintScheduledRef.current = true;
+    const v = srcVideoRef.current as
+      | (HTMLVideoElement & { requestVideoFrameCallback?: (cb: () => void) => number })
+      | null;
+    if (v && typeof v.requestVideoFrameCallback === "function") {
+      v.requestVideoFrameCallback(() => {
+        paintFrame();
+        schedulePaint(); /* keep the chain alive — still frame-driven */
+      });
+    } else {
+      /* fallback: ~30fps timer instead of display-rate rAF */
+      paintTimerRef.current = window.setTimeout(() => {
+        paintFrame();
+        schedulePaint();
+      }, 33);
+    }
   };
 
   const grabCamera = async (which: "user" | "environment", q: (typeof QUALITIES)[number]) => {
@@ -165,86 +205,81 @@ export default function CameraPage() {
     );
   };
 
-  const sendOffer = async () => {
-    const pc = pcRef.current;
-    const camId = camIdRef.current;
-    if (!pc || !camId) return;
-    if (negotiatingRef.current || pc.signalingState !== "stable") return;
-    try {
-      negotiatingRef.current = true;
-      lastAttemptRef.current = Date.now();
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      setDiag((d) => ({ ...d, offers: d.offers + 1 }));
-      send({ type: "cam-offer", camId, sdp: offer });
-    } catch (err) {
-      console.warn("createOffer failed:", err);
-    } finally {
-      negotiatingRef.current = false;
-    }
-  };
+  /* ---- per-viewer peer management ---- */
 
-  /* build (or rebuild) the peer connection around the current canvas track */
-  const buildPc = () => {
-    const cTrack = trackRef.current;
-    const cStream = cStreamRefForPc.current;
-    if (!cTrack || !cStream) return;
+  const buildViewerPc = (viewer: string): ViewerPc | null => {
+    const track = trackRef.current;
+    const stream = cStreamRef.current;
+    if (!track || !stream) return null;
 
-    pcRef.current?.close();
-    pendingIceRef.current = [];
-    answeredRef.current = false;
+    const old = peersRef.current.get(viewer);
+    old?.pc.close();
 
     const pc = new RTCPeerConnection({ iceServers: iceServers(), iceCandidatePoolSize: 10 });
-    pcRef.current = pc;
 
-    const q = QUALITIES.find((x) => x.id === quality)!;
-    const maxBitrate = Math.round(q.mbps * 1_000_000);
-
+    const maxBitrate = Math.round(QUALITIES.find((x) => x.id === quality)!.mbps * 1_000_000);
     try {
-      pc.addTransceiver(cTrack, {
+      pc.addTransceiver(track, {
         direction: "sendonly",
-        streams: [cStream],
+        streams: [stream],
         sendEncodings: [{ maxBitrate, maxFramerate: 30 }],
       });
     } catch {
-      pc.addTrack(cTrack, cStream);
+      pc.addTrack(track, stream);
     }
-    try {
-      cTrack.contentHint = "motion";
-    } catch {}
+
+    const entry: ViewerPc = { pc, negotiating: false, lastAttempt: 0 };
+    peersRef.current.set(viewer, entry);
 
     pc.onicecandidate = (e) => {
-      if (e.candidate) {
-        setDiag((d) => ({ ...d, iceOut: d.iceOut + 1 }));
-        send({
-          type: "cam-ice",
-          from: "phone",
-          camId: camIdRef.current,
-          candidate: e.candidate.toJSON(),
-        });
-      }
+      if (!e.candidate) return;
+      setDiag((d) => ({ ...d, iceOut: d.iceOut + 1 }));
+      send({
+        type: "cam-ice",
+        from: "phone",
+        camId: camIdRef.current,
+        candidate: e.candidate.toJSON(),
+        to: viewer,
+      });
     };
 
     pc.onconnectionstatechange = () => {
       const s = pc.connectionState;
-      patchDiag({ pc: s });
       if (s === "connected") setStatus("live");
       if (s === "failed") {
-        /* self-heal: rebuild the peer and re-offer on the next heartbeat */
+        /* tear down; the next heartbeat re-offers fresh */
+        pc.close();
+        if (peersRef.current.get(viewer)?.pc === pc) peersRef.current.delete(viewer);
         setStatus("connecting");
-        buildPc();
-        void sendOffer();
       }
     };
 
-    pc.oniceconnectionstatechange = () => {
-      patchDiag({ ice: pc.iceConnectionState });
-      if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed") {
-        setStatus("live");
-      }
-    };
+    return entry;
+  };
 
-    patchDiag({ pc: pc.connectionState, ice: pc.iceConnectionState, queued: 0 });
+  const sendOfferTo = async (viewer: string) => {
+    const camId = camIdRef.current;
+    if (!camId) return;
+    const existing = peersRef.current.get(viewer);
+    const entry = existing ?? buildViewerPc(viewer);
+    if (!entry) return;
+    const pc = entry.pc;
+    if (entry.negotiating || pc.signalingState !== "stable") return;
+    if (pc.connectionState === "connected") return;
+    if (Date.now() - entry.lastAttempt < REOFFER_COOLDOWN_MS) return;
+
+    try {
+      entry.negotiating = true;
+      entry.lastAttempt = Date.now();
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      setDiag((d) => ({ ...d, offers: d.offers + 1 }));
+      send({ type: "cam-offer", camId, sdp: offer, to: viewer });
+    } catch (err) {
+      console.warn(`createOffer (${viewer}) failed:`, err);
+    } finally {
+      entry.negotiating = false;
+    }
   };
 
   const goLive = async (pick: QualityId = quality) => {
@@ -267,65 +302,58 @@ export default function CameraPage() {
         cStream = streamRef.current!.clone();
       }
       cStreamRef.current = cStream;
-      cStreamRefForPc.current = cStream;
       trackRef.current = cStream.getVideoTracks()[0];
-
-      buildPc();
+      try {
+        trackRef.current.contentHint = "motion";
+      } catch {}
 
       const t = getTransport();
       unsubRef.current = t.subscribe(async (ev) => {
-        const pc = pcRef.current;
-        if (!pc) return;
+        const camId = camIdRef.current;
+        if (!camId) return;
 
         if (ev.type === "cam-request") {
-          /* heartbeat: only re-offer when the last attempt is stale —
-             never churn renegotiation while one is in flight */
-          if (pc.connectionState === "connected") return;
-          if (negotiatingRef.current || pc.signalingState !== "stable") return;
-          if (Date.now() - lastAttemptRef.current < REOFFER_COOLDOWN_MS) return;
-          await sendOffer();
-        } else if (ev.type === "cam-answer") {
-          if (ev.camId !== camIdRef.current) return;
+          const viewer = ev.from ?? "stage";
+          await sendOfferTo(viewer);
+          return;
+        }
+        if (ev.type === "cam-answer") {
+          /* answers come back tagged from=<viewer>; apply to that peer only */
+          const viewer = ev.from ?? "stage";
+          if ((ev.to ?? camId) !== camId) return;
+          const entry = peersRef.current.get(viewer);
+          if (!entry) return;
+          const pc = entry.pc;
           if (pc.signalingState !== "have-local-offer") return;
           try {
             await pc.setRemoteDescription(new RTCSessionDescription(ev.sdp));
-            answeredRef.current = true;
             setDiag((d) => ({ ...d, answers: d.answers + 1 }));
-            const queued = pendingIceRef.current;
-            pendingIceRef.current = [];
-            patchDiag({ queued: 0 });
-            for (const c of queued) {
-              try {
-                await pc.addIceCandidate(new RTCIceCandidate(c));
-              } catch (e) {
-                console.warn("queued addIceCandidate:", e);
-              }
-            }
           } catch (err) {
-            console.warn("apply answer failed:", err);
+            console.warn(`apply answer (${viewer}) failed:`, err);
           }
-        } else if (ev.type === "cam-ice" && ev.from === "stage") {
-          if (ev.camId !== camIdRef.current) return;
+          return;
+        }
+        if (ev.type === "cam-ice") {
+          /* viewer candidates arrive tagged from=<viewerId>; route by that */
+          if (ev.from === "phone") return; /* our own echo */
+          const entry = peersRef.current.get(ev.from);
+          if (!entry) return;
           setDiag((d) => ({ ...d, iceIn: d.iceIn + 1 }));
-          if (pc.remoteDescription && pc.remoteDescription.type) {
-            try {
-              await pc.addIceCandidate(new RTCIceCandidate(ev.candidate));
-            } catch (e) {
-              console.warn("addIceCandidate:", e);
-            }
-          } else {
-            pendingIceRef.current.push(ev.candidate);
-            patchDiag({ queued: pendingIceRef.current.length });
+          try {
+            await entry.pc.addIceCandidate(new RTCIceCandidate(ev.candidate));
+          } catch (e) {
+            console.warn(`addIceCandidate (${ev.from}):`, e);
           }
         }
       });
 
-      rafRef.current = requestAnimationFrame(drawLoop);
+      /* start painting frame-driven */
+      schedulePaint();
 
-      /* announce + offer immediately; the serialized transport keeps
-         offer-before-ICE ordering intact end to end */
+      /* announce + offer to the stage immediately; other viewers (ops tiles)
+         get offers via their own heartbeat cam-request → sendOfferTo(viewer) */
       send({ type: "cam-hello", camId });
-      await sendOffer();
+      await sendOfferTo("stage");
     } catch (err) {
       console.error("goLive failed:", err);
       stop();
@@ -335,22 +363,22 @@ export default function CameraPage() {
 
   const stop = () => {
     if (camIdRef.current) send({ type: "cam-bye", camId: camIdRef.current });
-    cancelAnimationFrame(rafRef.current);
+    clearTimeout(paintTimerRef.current);
+    paintScheduledRef.current = false;
     unsubRef.current?.();
-    pcRef.current?.close();
-    pcRef.current = null;
+    unsubRef.current = null;
+    peersRef.current.forEach((v) => v.pc.close());
+    peersRef.current.clear();
     streamRef.current?.getTracks().forEach((t) => t.stop());
     cStreamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
     cStreamRef.current = null;
-    cStreamRefForPc.current = null;
     trackRef.current = null;
-    pendingIceRef.current = [];
     if (srcVideoRef.current) srcVideoRef.current.srcObject = null;
     camIdRef.current = "";
     setResBadge("");
     setStatus("idle");
-    setDiag({ link: "-", pc: "-", ice: "-", offers: 0, answers: 0, iceOut: 0, iceIn: 0, queued: 0 });
+    setDiag({ link: diag.link, viewers: 0, offers: 0, answers: 0, iceOut: 0, iceIn: 0 });
   };
 
   const flip = async () => {
@@ -393,7 +421,10 @@ export default function CameraPage() {
       e.preventDefault();
       const [a, b] = Array.from(to);
       const dist = Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
-      const mid = { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 };
+      const mid = {
+        x: (a.clientX + b.clientX) / 2,
+        y: (a.clientY + b.clientY) / 2,
+      };
       setZoomBoth(zoomRef.current * (dist / (gestureRef.current.dist || dist)));
       gestureRef.current.dist = dist;
       if (gestureRef.current.mid.x) {
@@ -436,30 +467,25 @@ export default function CameraPage() {
   };
 
   useEffect(() => {
-    /* Closing the tab sends nothing through the WebSocket (the socket dies
-       with the page), so the stage would keep a phantom camera until the
-       30s hub heartbeat. A `pagehide` beacon tears it down immediately. */
     const onPageHide = () => {
       const camId = camIdRef.current;
       if (!camId) return;
-      const body = JSON.stringify({
-        type: "cam-bye",
-        camId,
-        id: newEventId(),
-        ts: Date.now(),
-      });
-      navigator.sendBeacon("/api/ws-send", body);
+      navigator.sendBeacon(
+        "/api/ws-send",
+        JSON.stringify({ type: "cam-bye", camId, id: newEventId(), ts: Date.now() })
+      );
     };
     window.addEventListener("pagehide", onPageHide);
-
     return () => {
       window.removeEventListener("pagehide", onPageHide);
-      cancelAnimationFrame(rafRef.current);
+      clearTimeout(paintTimerRef.current);
       unsubRef.current?.();
-      pcRef.current?.close();
+      peersRef.current.forEach((v) => v.pc.close());
+      peersRef.current.clear();
       streamRef.current?.getTracks().forEach((t) => t.stop());
       cStreamRef.current?.getTracks().forEach((t) => t.stop());
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -485,9 +511,7 @@ export default function CameraPage() {
               }
             }}
             className={`border px-3 py-1 font-mono text-xs font-bold uppercase tracking-wider transition-colors ${
-              quality === q.id
-                ? "border-volt bg-volt text-court"
-                : "border-ice/20 text-ice/60 hover:border-ice/40 hover:text-ice"
+              quality === q.id ? "border-volt bg-volt text-court" : "border-ice/20 text-ice/60"
             }`}
           >
             {q.label}
@@ -495,7 +519,7 @@ export default function CameraPage() {
         ))}
         <button
           onClick={() => void flip()}
-          className="ml-auto border border-mag/40 bg-mag/10 px-3 py-1 font-mono text-xs font-bold uppercase tracking-wider text-mag transition-colors hover:bg-mag hover:text-court"
+          className="ml-auto border border-mag/40 bg-mag/10 px-3 py-1 font-mono text-xs font-bold uppercase tracking-wider text-mag"
         >
           FLIP ({facing === "user" ? "FRONT" : "REAR"})
         </button>
@@ -518,7 +542,7 @@ export default function CameraPage() {
         />
         <canvas ref={canvasRef} className="h-full w-full object-cover" />
 
-        <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 font-mono text-[11px] font-bold tracking-wider">
+        <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 font-mono text-[11px] font-bold">
           <span
             className={`h-2.5 w-2.5 rounded-full ${
               status === "live"
@@ -528,8 +552,22 @@ export default function CameraPage() {
                 : "bg-mag"
             }`}
           />
-          <span className={status === "live" ? "text-volt" : status === "connecting" ? "text-[#ffd23f]" : "text-mag"}>
-            {status === "live" ? "ON AIR" : status === "connecting" ? "CONNECTING" : status === "error" ? "ERROR" : "IDLE"}
+          <span
+            className={
+              status === "live"
+                ? "text-volt"
+                : status === "connecting"
+                ? "text-[#ffd23f]"
+                : "text-mag"
+            }
+          >
+            {status === "live"
+              ? `ON AIR · ${diag.viewers} VIEWER${diag.viewers === 1 ? "" : "S"}`
+              : status === "connecting"
+              ? "CONNECTING"
+              : status === "error"
+              ? "ERROR"
+              : "IDLE"}
           </span>
         </div>
 
@@ -546,40 +584,25 @@ export default function CameraPage() {
         )}
       </div>
 
-      {/* signaling diagnostics — makes every handshake stage observable */}
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1 border border-ice/15 bg-panel/60 px-4 py-3 font-mono text-[10px] tracking-wider text-ice/70">
-        <div className="flex justify-between">
-          <span className="text-ice/40">LINK</span>
-          <span className={diag.link === "server" ? "text-volt" : "text-[#ffd23f]"}>{diag.link.toUpperCase()}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-ice/40">PEER</span>
-          <span className={diag.pc === "connected" ? "text-volt" : "text-ice"}>{diag.pc}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-ice/40">ICE</span>
-          <span className={diag.ice === "connected" || diag.ice === "completed" ? "text-volt" : diag.ice === "failed" ? "text-mag" : "text-ice"}>
-            {diag.ice}
-          </span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-ice/40">OFFERS</span>
-          <span className="text-ice">{diag.offers}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-ice/40">ANSWERS</span>
-          <span className={diag.answers > 0 ? "text-volt" : "text-[#ffd23f]"}>{diag.answers}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-ice/40">ICE ↑↓</span>
-          <span className="text-ice">
-            {diag.iceOut}/{diag.iceIn}
-          </span>
-        </div>
-        <div className="col-span-2 flex justify-between">
-          <span className="text-ice/40">QUEUED CANDIDATES</span>
-          <span className={diag.queued > 0 ? "text-[#ffd23f]" : "text-volt"}>{diag.queued}</span>
-        </div>
+      {/* compact diagnostics */}
+      <div className="grid grid-cols-3 gap-x-3 gap-y-1 border border-ice/15 bg-panel/60 px-4 py-3 font-mono text-[10px] tracking-wider text-ice/70">
+        <span className="text-ice/40">LINK</span>
+        <span className={diag.link === "server" ? "text-volt" : "text-[#ffd23f]"}>
+          {diag.link.toUpperCase()}
+        </span>
+        <span className={diag.viewers > 0 ? "text-volt" : "text-ice"}>
+          {diag.viewers} LIVE
+        </span>
+        <span className="text-ice/40">OFFERS</span>
+        <span>{diag.offers}</span>
+        <span className={diag.answers > 0 ? "text-volt" : "text-[#ffd23f]"}>
+          ANS {diag.answers}
+        </span>
+        <span className="text-ice/40">ICE ↑↓</span>
+        <span>
+          {diag.iceOut}/{diag.iceIn}
+        </span>
+        <span />
       </div>
 
       {/* zoom presets */}
@@ -590,9 +613,7 @@ export default function CameraPage() {
             key={z}
             onClick={() => setZoomBoth(z)}
             className={`flex-1 border py-1.5 font-mono text-xs font-bold ${
-              zoom === z
-                ? "border-volt bg-volt text-court"
-                : "border-ice/20 text-ice/60 hover:border-ice/40 hover:text-ice"
+              zoom === z ? "border-volt bg-volt text-court" : "border-ice/20 text-ice/60"
             }`}
           >
             {z}x
@@ -603,14 +624,14 @@ export default function CameraPage() {
       {status === "idle" || status === "error" ? (
         <button
           onClick={() => void goLive()}
-          className="border-2 border-volt bg-volt py-4 font-display text-2xl uppercase tracking-wider text-court transition-transform active:scale-[0.98]"
+          className="border-2 border-volt bg-volt py-4 font-display text-2xl uppercase tracking-wider text-court active:scale-[0.98]"
         >
           START BROADCAST
         </button>
       ) : (
         <button
           onClick={stop}
-          className="border-2 border-mag bg-mag/20 py-4 font-display text-2xl uppercase tracking-wider text-mag transition-transform active:scale-[0.98]"
+          className="border-2 border-mag bg-mag/20 py-4 font-display text-2xl uppercase tracking-wider text-mag active:scale-[0.98]"
         >
           STOP BROADCAST
         </button>
@@ -619,7 +640,7 @@ export default function CameraPage() {
       <footer className="mt-auto border-t border-ice/10 pt-3 font-mono text-[10px] leading-relaxed text-ice/40">
         Pinch to zoom · drag to pan · double-tap resets.
         <br />
-        ICE stuck at "checking" = network blocks peer-to-peer (client isolation / cellular NAT) — join the same Wi-Fi as the stage.
+        Viewers connect independently — stage + ops console can watch simultaneously.
       </footer>
     </main>
   );
