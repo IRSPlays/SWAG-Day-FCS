@@ -7,6 +7,7 @@ const routes = [
   { href: "/editor", name: "EDITOR", desc: "Quick-edit slides, live", status: "LIVE", live: true },
   { href: "/audience", name: "AUDIENCE", desc: "Phones: reactions · votes · survey", status: "LIVE", live: true },
   { href: "/camera", name: "CAMERA", desc: "Phone → stage video link", status: "LIVE", live: true },
+  { href: "/camera-ops", name: "CAM OPS", desc: "Camera operator console", status: "LIVE", live: true },
   { href: "/lyrics", name: "LYRICS", desc: "Manual lyric operator console", status: "LIVE", live: true },
   { href: "/report", name: "REPORT", desc: "Post-event analytics", status: "LIVE", live: true },
 ];

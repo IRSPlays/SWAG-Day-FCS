@@ -103,14 +103,18 @@ export default function CameraPage() {
         const W = canvas.width;
         const H = canvas.height;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.fillStyle = "#000";
-        ctx.fillRect(0, 0, W, H);
         const z = zoomRef.current;
         const scale = Math.max(W / video.videoWidth, H / video.videoHeight) * z;
         const dw = video.videoWidth * scale;
         const dh = video.videoHeight * scale;
         const ox = (W - dw) / 2 + (panRef.current.x * (W - dw)) / 2;
         const oy = (H - dh) / 2 + (panRef.current.y * (H - dh)) / 2;
+        /* only clear when the frame doesn't fully cover the canvas (zoomed
+           out with letterboxing). When it fills, a re-draw is enough. */
+        if (ox > 0 || oy > 0 || dw < W || dh < H) {
+          ctx.fillStyle = "#000";
+          ctx.fillRect(0, 0, W, H);
+        }
         ctx.drawImage(video, ox, oy, dw, dh);
       }
     }
@@ -193,11 +197,14 @@ export default function CameraPage() {
     const pc = new RTCPeerConnection({ iceServers: iceServers(), iceCandidatePoolSize: 10 });
     pcRef.current = pc;
 
+    const q = QUALITIES.find((x) => x.id === quality)!;
+    const maxBitrate = Math.round(q.mbps * 1_000_000);
+
     try {
       pc.addTransceiver(cTrack, {
         direction: "sendonly",
         streams: [cStream],
-        sendEncodings: [{ maxBitrate: 5_000_000, maxFramerate: 30 }],
+        sendEncodings: [{ maxBitrate, maxFramerate: 30 }],
       });
     } catch {
       pc.addTrack(cTrack, cStream);
