@@ -102,6 +102,10 @@ app.prepare().then(() => {
   wss.on("connection", (socket) => {
     clients.add(socket);
     socket.isAlive = true;
+    /* immediate proof-of-delivery frame - the client watchdog keys on it */
+    socket.send(
+      JSON.stringify({ id: "__hello", ts: Date.now(), type: "__hello", __seq: seqCounter }),
+    );
     socket.on("pong", () => {
       socket.isAlive = true;
     });

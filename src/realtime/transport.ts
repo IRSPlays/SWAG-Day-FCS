@@ -14,6 +14,8 @@
 
 import type { ShowEvent } from "./types";
 
+const WS_WATCHDOG_MS = 4000; /* no frame within this window after onopen => the pipe is a blackhole */
+
 export interface Transport {
   kind: "local" | "server";
   publish: (ev: ShowEvent) => void;
@@ -85,6 +87,8 @@ function wsTransport(): Transport {
   let pollCursor: number | null = null; // null = not synced yet (head first, no history replay)
   let lastWsSeq = 0; // from __seq on WS frames - gap-free WS -> HTTP handoff
   const outbound: ShowEvent[] = [];
+  let gotFrame = false; // any frame from the server proves the pipe delivers
+  let watchdog: ReturnType<typeof setTimeout> | null = null;
 
   const enqueueOutbound = (ev: ShowEvent) => {
     outbound.push(ev);
@@ -144,6 +148,7 @@ function wsTransport(): Transport {
       (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)
     )
       return;
+    gotFrame = false;
     const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
     socket = new WebSocket(`${proto}//${window.location.host}/api/ws`);
 
@@ -165,9 +170,25 @@ function wsTransport(): Transport {
         pollTimer = null;
       }
       flushOutbound();
+      /* onopen only proves the upgrade completed - a proxy can blackhole the
+         socket afterwards. If the server never delivers a frame (the __hello
+         proof, or any event), the pipe is fake: drop WS and go HTTP. */
+      if (watchdog) clearTimeout(watchdog);
+      watchdog = setTimeout(() => {
+        if (gotFrame) return;
+        try {
+          socket?.close();
+        } catch {}
+        /* fall through to onclose, which bridges to HTTP */
+      }, WS_WATCHDOG_MS);
     };
 
     socket.onmessage = (e) => {
+      gotFrame = true;
+      if (watchdog) {
+        clearTimeout(watchdog);
+        watchdog = null;
+      }
       try {
         const parsed = JSON.parse(e.data as string) as ShowEvent & { __seq?: number };
         if (typeof parsed.__seq === "number") lastWsSeq = parsed.__seq;
@@ -179,6 +200,10 @@ function wsTransport(): Transport {
 
     socket.onclose = () => {
       if (failTimer) clearTimeout(failTimer);
+      if (watchdog) {
+        clearTimeout(watchdog);
+        watchdog = null;
+      }
       const hadOpened = mode === "ws";
       socket = null;
       if (!hadOpened && mode === "deciding") {
