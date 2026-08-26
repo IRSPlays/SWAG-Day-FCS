@@ -11,15 +11,8 @@
 import { useEffect, useRef, useState, type TouchEvent as ReactTouchEvent } from "react";
 import { getTransport } from "@/realtime/transport";
 import { newEventId, type ShowEvent, type ShowEventInput } from "@/realtime/types";
+import { iceServers } from "@/realtime/rtc";
 
-const RTC_CFG: RTCConfiguration = {
-  iceServers: [
-    { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] },
-    { urls: ["stun:stun2.l.google.com:19302", "stun:stun3.l.google.com:19302"] },
-    { urls: ["stun:stun.cloudflare.com:3478"] },
-  ],
-  iceCandidatePoolSize: 10,
-};
 
 const QUALITIES = [
   { id: "720p", label: "720p", w: 1280, h: 720, mbps: 2.5 },
@@ -178,7 +171,7 @@ export default function CameraPage() {
       lastAttemptRef.current = Date.now();
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      patchDiag({ offers: diag.offers + 1 });
+      setDiag((d) => ({ ...d, offers: d.offers + 1 }));
       send({ type: "cam-offer", camId, sdp: offer });
     } catch (err) {
       console.warn("createOffer failed:", err);
@@ -197,7 +190,7 @@ export default function CameraPage() {
     pendingIceRef.current = [];
     answeredRef.current = false;
 
-    const pc = new RTCPeerConnection(RTC_CFG);
+    const pc = new RTCPeerConnection({ iceServers: iceServers(), iceCandidatePoolSize: 10 });
     pcRef.current = pc;
 
     try {
@@ -215,7 +208,7 @@ export default function CameraPage() {
 
     pc.onicecandidate = (e) => {
       if (e.candidate) {
-        patchDiag({ iceOut: diag.iceOut + 1 });
+        setDiag((d) => ({ ...d, iceOut: d.iceOut + 1 }));
         send({
           type: "cam-ice",
           from: "phone",
@@ -290,7 +283,7 @@ export default function CameraPage() {
           try {
             await pc.setRemoteDescription(new RTCSessionDescription(ev.sdp));
             answeredRef.current = true;
-            patchDiag({ answers: diag.answers + 1 });
+            setDiag((d) => ({ ...d, answers: d.answers + 1 }));
             const queued = pendingIceRef.current;
             pendingIceRef.current = [];
             patchDiag({ queued: 0 });
@@ -306,7 +299,7 @@ export default function CameraPage() {
           }
         } else if (ev.type === "cam-ice" && ev.from === "stage") {
           if (ev.camId !== camIdRef.current) return;
-          patchDiag({ iceIn: diag.iceIn + 1 });
+          setDiag((d) => ({ ...d, iceIn: d.iceIn + 1 }));
           if (pc.remoteDescription && pc.remoteDescription.type) {
             try {
               await pc.addIceCandidate(new RTCIceCandidate(ev.candidate));
@@ -436,7 +429,24 @@ export default function CameraPage() {
   };
 
   useEffect(() => {
+    /* Closing the tab sends nothing through the WebSocket (the socket dies
+       with the page), so the stage would keep a phantom camera until the
+       30s hub heartbeat. A `pagehide` beacon tears it down immediately. */
+    const onPageHide = () => {
+      const camId = camIdRef.current;
+      if (!camId) return;
+      const body = JSON.stringify({
+        type: "cam-bye",
+        camId,
+        id: newEventId(),
+        ts: Date.now(),
+      });
+      navigator.sendBeacon("/api/ws-send", body);
+    };
+    window.addEventListener("pagehide", onPageHide);
+
     return () => {
+      window.removeEventListener("pagehide", onPageHide);
       cancelAnimationFrame(rafRef.current);
       unsubRef.current?.();
       pcRef.current?.close();

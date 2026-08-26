@@ -54,3 +54,20 @@ Keyboard on a lyric slide: P play/pause track · ↓/↑ next/prev line · R res
 2. The start command MUST run `server.js` (i.e. `npm start`). A bare `next start` serves the pages but silently kills the realtime hub — cameras will show `LINK: LOCAL` forever.
 3. Realtime runs on our own WebSocket hub at `/api/ws` (same server as the app). Networks that block WebSocket upgrades fall back automatically to HTTP polling (`/api/ws-send` + `/api/ws-poll`) — if the page loads, the show syncs. No third-party keys needed.
 4. If the server is unreachable entirely, the system still works — synced across tabs of one browser via BroadcastChannel.
+
+## Camera streaming across different networks (TURN)
+
+Camera signaling rides the hub over HTTPS/WS, so a phone can *register* from any network — but the **video** itself is peer-to-peer WebRTC. STUN only punches through friendly NATs. Between different networks (a phone on cellular CGNAT, the stage on client-isolated venue Wi-Fi) the ICE checks never complete and the feed stays black. A **TURN relay** carries the media whenever direct P2P is impossible.
+
+Both peers share the ICE list from `src/realtime/rtc.ts`, which reads these env vars on the server:
+
+| Var | What |
+|---|---|
+| `NEXT_PUBLIC_TURN_URLS` | Comma-separated TURN URLs, e.g. `turn:myapp.up.railway.app:3478,turn:myapp.up.railway.app:443?transport=tcp` |
+| `NEXT_PUBLIC_TURN_USERNAME` | TURN username |
+| `NEXT_PUBLIC_TURN_CREDENTIAL` | TURN credential |
+
+With none set, the code falls back to the public **OpenRelay** test relay (so cross-network rehearsal works out of the box) and logs a console warning. **That relay is rehearsal-grade only — media transits a third party.** Stand up your own [coturn](https://github.com/coturn/coturn) and set the three env vars before show day.
+
+To confirm TURN is actually in use: on the phone `/camera` page, check the HUD — if ICE reaches `connected`/`completed` across different networks, the relay is carrying the media.
+

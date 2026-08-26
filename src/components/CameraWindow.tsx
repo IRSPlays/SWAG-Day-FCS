@@ -14,15 +14,9 @@ import { motion } from "motion/react";
 import { getTransport } from "@/realtime/transport";
 import { newEventId, type ShowEvent, type ShowEventInput } from "@/realtime/types";
 import { useShow } from "@/store/show";
+import { iceServers } from "@/realtime/rtc";
 
-const RTC_CFG: RTCConfiguration = {
-  iceServers: [
-    { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] },
-    { urls: ["stun:stun2.l.google.com:19302", "stun:stun3.l.google.com:19302"] },
-    { urls: ["stun:stun.cloudflare.com:3478"] },
-  ],
-  iceCandidatePoolSize: 10,
-};
+/* connection config lives in @/realtime/rtc - shared with the phone side */
 
 interface CamPeer {
   pc: RTCPeerConnection;
@@ -137,7 +131,7 @@ export default function CameraWindow() {
         existing.video.remove();
       }
 
-      const pc = new RTCPeerConnection(RTC_CFG);
+      const pc = new RTCPeerConnection({ iceServers: iceServers(), iceCandidatePoolSize: 10 });
       const video = document.createElement("video");
       video.autoplay = true;
       video.playsInline = true;
@@ -213,11 +207,15 @@ export default function CameraWindow() {
           break;
         }
         case "cam-bye": {
+          /* NO dispatch here: the phone's original cam-bye already reaches
+             every store via transport fan-out. Re-publishing it reflects
+             back to this handler, which re-publishes again - an infinite
+             event storm (~200 ev/s observed) that floods the hub's history
+             ring. The reducer case already deletes the cam. */
           const peer = peersRef.current.get(ev.camId);
           peer?.pc.close();
           peer?.video.remove();
           peersRef.current.delete(ev.camId);
-          dispatch({ type: "cam-bye", camId: ev.camId });
           break;
         }
         case "cam-offer": {
