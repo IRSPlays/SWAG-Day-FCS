@@ -1,38 +1,50 @@
 "use client";
 
-/* 03 · THE WALKWAY: SPORTS EDITION — runway beat, teachers walk the aisle.
-   Full-bleed centre runway with vanishing-point lane lines and a bottom
-   look-strip. No side columns — reads as a stage floor, not a dashboard.
-   Script: "Play 'Count on Me' audio when Teachers Walk in" — the track
-   auto-plays when this slide cues (stage must be ARMed). */
+/* 03 · THE WALKWAY — teachers walk the aisle, class by class.
+   Normal walkway (no sports showcase). Script: "Play 'Count on Me'
+   when Teachers Walk in" — driven by the RIGHT ARROW:
+   press 1 → track starts · press 2 → song fades out, next cue. */
 
+import { useRef, useState } from "react";
 import { motion } from "motion/react";
 import SlideShell, { LiveBug, TickerBand } from "@/layouts/SlideShell";
 import { LetterStagger } from "@/animations";
 import { useSlideContent } from "@/store/show";
+import { useSlideAction, useMuted } from "@/engine/advance";
 import type { SlideMeta } from "../types";
+
+/* singleton so the fade-out survives the slide unmounting */
+let walkAudio: HTMLAudioElement | null = null;
+function getWalkAudio(): HTMLAudioElement {
+  if (!walkAudio) {
+    walkAudio = new Audio("/audio/count-on-me.flac");
+    walkAudio.loop = true;
+    walkAudio.preload = "auto";
+  }
+  return walkAudio;
+}
 
 export const meta: SlideMeta = {
   id: "walkway",
-  title: "03 · The Walkway — Sports Edition",
+  title: "03 · The Walkway",
   transition: "track-sweep",
   durationHint: 600,
   notes:
-    "Runway of Champions! 'Count on Me' plays automatically as the teachers walk the aisle front to back. Keep this slide up the whole segment.",
+    "Teachers walk the aisle front to back. PRESS → (1st): 'Count on Me' starts. PRESS → (2nd) when the walkway is done: the song fades out and the show moves on.",
   accent: "mag",
 };
 
 export const content = {
-  kicker: "RUNWAY OF CHAMPIONS",
-  titleTop: "THE WALKWAY",
-  titleBottom: "SPORTS EDITION",
-  promptLeft: "WHAT SPORT IS IT?",
-  promptRight: "SCREAM YES!",
-  looks: ["LOOK 01 · BADMINTON", "LOOK 02 · BASKETBALL", "LOOK 03 · FOOTBALL", "FINAL LOOK · FULL SWAG KIT"],
+  kicker: "THE WALKWAY",
+  titleTop: "OUR COACHES",
+  titleBottom: "ON THE WALK",
+  promptLeft: "GIVE IT UP FOR",
+  promptRight: "OUR COACHES!",
+  looks: ["CLASS BY CLASS", "FRONT TO BACK", "MAKE SOME NOISE"],
   ticker: [
-    "THE RUNWAY OF CHAMPIONS",
-    "SUIT UP! SHOW UP! SPORT IT UP!",
-    "TEACHERS ON THE CATWALK",
+    "THE WALKWAY",
+    "GIVE IT UP FOR OUR TEACHERS",
+    "TEACHERS ON THE WALK",
     "MAKE SOME NOISE",
     "SWAG DAY '26",
   ],
@@ -40,11 +52,40 @@ export const content = {
 
 export default function Walkway() {
   const c = useSlideContent(meta.id, content);
+  const muted = useMuted();
+  const [started, setStarted] = useState(false);
+  const fadingRef = useRef(false);
+
+  /* RIGHT ARROW — press 1: "Count on Me" starts · press 2: the song fades
+     out and the deck moves on (the singleton audio keeps fading after the
+     slide unmounts). */
+  useSlideAction(() => {
+    if (muted) return true; /* muted monitor: never skip the walkway cue */
+    if (!started) {
+      const a = getWalkAudio();
+      a.volume = 0.9;
+      void a.play().catch(() => {});
+      setStarted(true);
+      return true;
+    }
+    if (!fadingRef.current) {
+      fadingRef.current = true;
+      const a = getWalkAudio();
+      const iv = setInterval(() => {
+        const v = Math.max(0, a.volume - 0.025);
+        a.volume = v;
+        if (v <= 0) {
+          a.pause();
+          a.volume = 0.9; /* reset for the next show run */
+          clearInterval(iv);
+        }
+      }, 80);
+    }
+    return false; /* the fade continues while the next cue comes in */
+  });
 
   return (
     <SlideShell>
-      {/* walk-in track — "Count on Me" (Bruno Mars), per the emcee script */}
-      <audio src="/audio/count-on-me.flac" autoPlay loop preload="auto" className="hidden" />
       {/* ---------- vanishing-point runway floor (full bleed) ---------- */}
       <div
         className="pointer-events-none absolute inset-x-0 bottom-[104px] top-[90px] z-0 overflow-hidden"
