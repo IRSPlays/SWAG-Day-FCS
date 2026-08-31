@@ -223,7 +223,7 @@ export default function CameraWindow() {
               Open /camera on a mobile device and tap START BROADCAST
             </div>
             {linkDiag && (
-              <div className="mt-3 inline-block bg-black/80 px-3 py-1 font-mono text-[11px] text-[#ffd23f]">
+              <div className="mt-3 inline-block bg-black/80 px-3 py-1 font-mono text-[11px] text-[#e1811f]">
                 {linkDiag}
               </div>
             )}

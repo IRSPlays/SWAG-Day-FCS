@@ -116,7 +116,7 @@ export default function CameraOpsPage() {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-4 bg-court px-5 py-6 text-ice">
+    <main className="page-light mx-auto flex min-h-screen max-w-6xl flex-col gap-4 bg-court px-5 py-6 text-ice">
       <header className="flex items-end justify-between border-b-2 border-ice/10 pb-3">
         <div>
           <div className="font-body text-[11px] font-bold tracking-[0.4em] text-mag">
@@ -136,7 +136,7 @@ export default function CameraOpsPage() {
           </span>
           <span
             className={`border px-2 py-0.5 ${
-              relayMode === "own" ? "border-volt text-volt" : "border-[#ffd23f] text-[#ffd23f]"
+              relayMode === "own" ? "border-volt text-volt" : "border-[#eeeded] text-[#eeeded]"
             }`}
             title={
               relayMode === "own"
@@ -233,7 +233,7 @@ export default function CameraOpsPage() {
                       st?.state === "connected"
                         ? st.kbps > 0
                           ? "animate-pulse bg-volt"
-                          : "bg-[#ffd23f]"
+                          : "bg-[#e1811f]"
                         : "bg-mag"
                     }`}
                     title={

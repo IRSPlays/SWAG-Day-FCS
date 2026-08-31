@@ -489,7 +489,7 @@ export default function CameraPage() {
   }, []);
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col gap-4 bg-court px-5 py-6 text-ice">
+    <main className="page-light mx-auto flex min-h-screen max-w-md flex-col gap-4 bg-court px-5 py-6 text-ice">
       <header>
         <div className="font-body text-[11px] font-bold tracking-[0.4em] text-mag">
           STAGE BROADCAST CAM
@@ -548,7 +548,7 @@ export default function CameraPage() {
               status === "live"
                 ? "animate-ping bg-volt"
                 : status === "connecting"
-                ? "animate-pulse bg-[#ffd23f]"
+                ? "animate-pulse bg-[#e1811f]"
                 : "bg-mag"
             }`}
           />
@@ -557,7 +557,7 @@ export default function CameraPage() {
               status === "live"
                 ? "text-volt"
                 : status === "connecting"
-                ? "text-[#ffd23f]"
+                ? "text-[#eeeded]"
                 : "text-mag"
             }
           >
@@ -587,7 +587,7 @@ export default function CameraPage() {
       {/* compact diagnostics */}
       <div className="grid grid-cols-3 gap-x-3 gap-y-1 border border-ice/15 bg-panel/60 px-4 py-3 font-mono text-[10px] tracking-wider text-ice/70">
         <span className="text-ice/40">LINK</span>
-        <span className={diag.link === "server" ? "text-volt" : "text-[#ffd23f]"}>
+        <span className={diag.link === "server" ? "text-volt" : "text-[#eeeded]"}>
           {diag.link.toUpperCase()}
         </span>
         <span className={diag.viewers > 0 ? "text-volt" : "text-ice"}>
@@ -595,7 +595,7 @@ export default function CameraPage() {
         </span>
         <span className="text-ice/40">OFFERS</span>
         <span>{diag.offers}</span>
-        <span className={diag.answers > 0 ? "text-volt" : "text-[#ffd23f]"}>
+        <span className={diag.answers > 0 ? "text-volt" : "text-[#eeeded]"}>
           ANS {diag.answers}
         </span>
         <span className="text-ice/40">ICE ↑↓</span>

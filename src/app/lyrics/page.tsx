@@ -33,12 +33,12 @@ export default function LyricsConsole() {
 
   /* hardware volume buttons etc. are avoided; big thumb-friendly targets */
   return (
-    <main className="min-h-screen bg-[#07050f] text-ice">
+    <main className="min-h-screen bg-[#141111] text-ice">
       {/* header */}
-      <div className="sticky top-0 z-20 border-b border-white/10 bg-[#07050f]/95 px-5 pb-3 pt-5 backdrop-blur">
+      <div className="sticky top-0 z-20 border-b border-white/10 bg-[#141111]/95 px-5 pb-3 pt-5 backdrop-blur">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-[11px] font-bold tracking-[0.35em] text-[#8f6bff]">LYRIC CONSOLE</div>
+            <div className="text-[11px] font-bold tracking-[0.35em] text-[#e1811f]">LYRIC CONSOLE</div>
             <div className="mt-0.5 text-xl font-extrabold">
               {lyric ? lyric.song : "NO LYRIC SLIDE ON STAGE"}
               {lyric?.artist && <span className="text-ice/40"> - {lyric.artist}</span>}
@@ -47,7 +47,7 @@ export default function LyricsConsole() {
           {lyric && (
             <div className="text-right">
               <span className={`inline-block rounded-full border px-3 py-1 text-[11px] font-bold tracking-[0.2em] ${
-                lyric.manual ? "border-[#ff3da655] text-[#ff3da6]" : "border-[#23dcff55] text-[#23dcff]"
+                lyric.manual ? "border-[#ea3a3a55] text-[#ea3a3a]" : "border-[#4758d655] text-[#4758d6]"
               }`}>
                 {lyric.manual ? "MANUAL" : "TRACK"}
               </span>
@@ -108,7 +108,7 @@ export default function LyricsConsole() {
           </div>
 
           {/* transport - huge thumb targets */}
-          <div className="sticky bottom-0 z-20 border-t border-white/10 bg-[#07050f]/95 px-4 pb-6 pt-3 backdrop-blur">
+          <div className="sticky bottom-0 z-20 border-t border-white/10 bg-[#141111]/95 px-4 pb-6 pt-3 backdrop-blur">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => cmd("prev")}
@@ -119,14 +119,14 @@ export default function LyricsConsole() {
               <button
                 onClick={() => cmd(playing ? "pause" : "play")}
                 className={`h-16 w-24 rounded-2xl text-xl font-extrabold active:scale-95 ${
-                  playing ? "bg-[#ff3da6] text-black" : "bg-[#23dcff] text-black"
+                  playing ? "bg-[#ea3a3a] text-black" : "bg-[#4758d6] text-black"
                 }`}
               >
                 {playing ? "PAUSE" : "PLAY"}
               </button>
               <button
                 onClick={() => cmd("next")}
-                className="h-16 flex-[2] rounded-2xl bg-[#8f6bff] text-2xl font-black tracking-wide text-black active:scale-95"
+                className="h-16 flex-[2] rounded-2xl bg-[#e1811f] text-2xl font-black tracking-wide text-black active:scale-95"
               >
                 NEXT &darr;
               </button>
@@ -161,7 +161,7 @@ export default function LyricsConsole() {
                 onClick={() => cmd("goto", i)}
                 className={`mb-1 block w-full rounded-lg px-4 py-2.5 text-left text-[15px] leading-snug ${
                   i === lyric.line
-                    ? "bg-[#8f6bff]/20 font-extrabold text-ice"
+                    ? "bg-[#e1811f]/20 font-extrabold text-ice"
                     : i < lyric.line
                       ? "text-ice/25"
                       : "text-ice/55"

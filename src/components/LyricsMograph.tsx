@@ -17,6 +17,7 @@ import { AnimatePresence, motion } from "motion/react";
 import type { LyricCue, SongHeader } from "@/slides/lyrics";
 import { LetterStagger } from "@/animations";
 import { getTransport } from "@/realtime/transport";
+import { useSlideAction, useMuted } from "@/engine/advance";
 import { useShow } from "@/store/show";
 import { cuesToLines, fmtClock, parseTtml, sectionAt, type LyricWord } from "@/lib/lyrics";
 
@@ -42,9 +43,9 @@ export interface LyricsMographProps {
 }
 
 const ACCENT_HEX: Record<string, string> = {
-  volt: "#23dcff",
-  mag: "#ff3da6",
-  vio: "#8f6bff",
+  volt: "#4758d6",
+  mag: "#ea3a3a",
+  vio: "#e1811f",
 };
 
 type Treat = "chorus" | "bridge" | "verse";
@@ -102,6 +103,7 @@ export default function LyricsMograph({
 }: LyricsMographProps) {
   const hex = ACCENT_HEX[accent];
   const dispatch = useShow((s) => s.dispatch);
+  const muted = useMuted();
 
   /* ---------- lyric source: official TTML wins, else cue estimates ---------- */
   const [fetched, setFetched] = useState<string | null>(null);
@@ -143,6 +145,10 @@ export default function LyricsMograph({
   const wordElsRef = useRef<(HTMLSpanElement | null)[]>([]);
   const lineWordsRef = useRef<LyricWord[]>([]);
   const treatRef = useRef<Treat>("verse");
+  /* ONE-BUTTON word stepping (band mode): how many words of the current
+     line are lit; the stage's right-arrow advances it word by word */
+  const wordCursorRef = useRef(0);
+  const endedRef = useRef(false);
 
   useEffect(() => { lineWordsRef.current = lines[cur]?.words ?? []; }, [cur, lines]);
   /* ---------- shared command handler (keys + operator console) ---------- */
@@ -156,10 +162,13 @@ export default function LyricsMograph({
     for (let k = 0; k < lines.length; k++) if (lines[k].t <= t) i = k;
     return i;
   };
-  const setLine = (i: number) => {
+  const setLine = (i: number, lightAll = false) => {
     const clamped = Math.max(-1, Math.min(lines.length - 1, i));
     idxRef.current = clamped;
     sweepRef.current = 0;
+    /* console-driven line jumps light the WHOLE line (the operator owns it);
+       word-stepping starts a fresh line dark and lights word 1 on advance */
+    wordCursorRef.current = lightAll ? (clamped >= 0 ? lines[clamped].words.length : 0) : clamped >= 0 ? 1 : 0;
     wordElsRef.current.forEach((el) => el?.classList.remove("on"));
     setCur(clamped);
   };
@@ -172,12 +181,9 @@ export default function LyricsMograph({
         case "restart": a.currentTime = 0; setLine(-1); void a.play(); break;
         case "next": {
           const curIdx = idxForTime(a.currentTime);
-          if (curIdx >= lines.length - 1) {
-            a.currentTime = (lines[lines.length - 1]?.end ?? total) + 4;
-            setLine(-1);
-          } else {
-            a.currentTime = lines[curIdx + 1]?.t ?? 0;
-          }
+          /* hold on the final line — never jump back to the intro card */
+          if (curIdx >= lines.length - 1) break;
+          a.currentTime = lines[curIdx + 1]?.t ?? 0;
           break;
         }
         case "prev": a.currentTime = lines[Math.max(0, idxForTime(a.currentTime) - 1)]?.t ?? 0; break;
@@ -187,20 +193,54 @@ export default function LyricsMograph({
       switch (action) {
         case "play": pausedRef.current = false; setPlaying(true); break;
         case "pause": pausedRef.current = true; setPlaying(false); break;
-        case "restart": pausedRef.current = false; setPlaying(true); setLine(-1); break;
+        case "restart": pausedRef.current = false; setPlaying(true); setLine(-1, true); break;
         case "next": {
-          if (idxRef.current >= lines.length - 1) {
-            setLine(-1);
-          } else {
-            setLine(idxRef.current + 1);
-          }
+          /* hold on the final line — never jump back to the intro card */
+          if (idxRef.current >= lines.length - 1) break;
+          setLine(idxRef.current + 1, true);
           break;
         }
-        case "prev": setLine(idxRef.current - 1); break;
-        case "goto": if (line != null) setLine(line); break;
+        case "prev": setLine(idxRef.current - 1, true); break;
+        case "goto": if (line != null) setLine(line, true); break;
       }
     }
   };
+
+  /* ---------- THE ONE-BUTTON ADVANCE (right arrow) ----------
+     Track mode: starts the backing track, then protects the cue while it
+     plays (the track is the clock). After the track ends, the advance
+     passes through to the next cue.
+     Band mode (no track): WORD BY WORD — each press lights the next word;
+     a fresh line starts on the press after the last word of a line. */
+  useSlideAction(() => {
+    if (audio) {
+      if (muted) return true; /* muted monitor: never skip a lyric cue */
+      const a = audioRef.current;
+      if (!a) return false;
+      if (endedRef.current) return false; /* track finished → next cue */
+      if (a.paused) {
+        void a.play();
+        return true;
+      }
+      return true; /* playing — the track owns the show */
+    }
+    /* band mode */
+    if (idxRef.current < 0) {
+      if (!lines.length) return false;
+      setLine(0); /* cursor = 1, the rAF lights word 0 */
+      return true;
+    }
+    const words = lineWordsRef.current;
+    if (wordCursorRef.current < words.length) {
+      wordCursorRef.current++;
+      return true;
+    }
+    if (idxRef.current < lines.length - 1) {
+      setLine(idxRef.current + 1);
+      return true;
+    }
+    return false; /* last line fully lit → next cue */
+  });
 
   /* ---------- the clock + word sweep (one rAF, zero re-renders) ---------- */
   useEffect(() => {
@@ -229,7 +269,8 @@ export default function LyricsMograph({
 
       /* word-by-word kinetic lighting (direct DOM - no re-render).
          Track mode: locked to audio playback clock.
-         Manual mode: runs full automatic sing-along sweep as soon as the operator clicks NEXT! */
+         Band mode (no track): locked to the word cursor — the right-arrow
+         on the stage lights one word per press, nothing auto-advances. */
       const words = lineWordsRef.current;
       const els = wordElsRef.current;
       const curLine = idxRef.current >= 0 ? lines[idxRef.current] : null;
@@ -239,7 +280,9 @@ export default function LyricsMograph({
         const el = els[i];
         if (!el) continue;
         const wordOffset = Math.max(0, words[i].t - lineStart);
-        const isWordLit = a ? time >= words[i].t : sweepRef.current >= wordOffset;
+        const isWordLit = a
+          ? time >= words[i].t
+          : i < wordCursorRef.current;
         if (isWordLit) el.classList.add("on");
         else el.classList.remove("on");
       }
@@ -254,8 +297,9 @@ export default function LyricsMograph({
         sectionRef.current = sec;
         setSection(sec);
       }
-      /* buttery-smooth passive camera float (ultra-low frequency breathing drift) */
-      if (shakeRef.current) {
+      /* buttery-smooth passive camera float (ultra-low frequency breathing drift).
+         Muted monitor: skip entirely — it's a reference view, save the GPU. */
+      if (shakeRef.current && !muted) {
         const tSec = now / 1000;
         const treatCur = treatRef.current;
         const intensity = treatCur === "chorus" ? 1.15 : treatCur === "bridge" ? 0.6 : 0.9;
@@ -301,6 +345,7 @@ export default function LyricsMograph({
 
   /* ---------- broadcast status to the operator console ---------- */
   useEffect(() => {
+    if (muted) return; /* the muted monitor doesn't fight the stage for state */
     dispatch({
       type: "lyric-state",
       slideId,
@@ -437,18 +482,24 @@ export default function LyricsMograph({
 
   return (
     <div
-      className="absolute inset-0 overflow-hidden bg-[#07050f]"
-      style={{ "--lw-accent": hex } as CSSProperties}
+      className="absolute inset-0 overflow-hidden bg-[#141111]"
+      style={{
+        /* this engine paints its own dark backdrop — pin the ice token back
+           to off-white so SlideShell's page-light flip can't darken the text */
+        "--lw-accent": hex,
+        "--color-ice": "#eeeded",
+      } as CSSProperties}
     >
-      {audio && (
+      {audio && !muted && (
         <audio
           ref={audioRef}
           src={audio}
           preload="auto"
           className="hidden"
-          onPlay={() => setPlaying(true)}
+          onPlay={() => { endedRef.current = false; setPlaying(true); }}
           onPause={() => setPlaying(false)}
           onEnded={() => {
+            endedRef.current = true;
             setPlaying(false);
             setLine(-1);
             if (audioRef.current) audioRef.current.currentTime = 0;
@@ -465,14 +516,23 @@ export default function LyricsMograph({
           animate={camTarget}
           transition={{ duration: 5.5, ease: [0.25, 0.1, 0.25, 1] }}
         >
-      {/* ---------- backdrop: cover art, blurred, slow cinematic drift ---------- */}
-      {/* outer layer = the drift; inner layer = adaptive lighting per section.
-          OVERSIZED 25% each side so the camera's dolly + drift + beat-punch
-          can never pull a dark edge into frame. */}
+      {/* ---------- backdrop: cover art, blurred, slow cinematic drift ----------
+          outer layer = the drift; inner layer = adaptive lighting per section.
+          Oversized just enough (15%) for the dolly + drift to never pull a
+          dark edge into frame — blur cost scales with layer area, so this
+          stays cheap on the 1080p stage. */}
       <motion.div
-        className="absolute -inset-[25%]"
-        animate={{ scale: [1.08, 1.2], x: [0, -70], y: [0, 44] }}
-        transition={{ duration: 30, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }}
+        className="absolute -inset-[15%]"
+        animate={
+          muted
+            ? { scale: 1.08 }
+            : { scale: [1.08, 1.2], x: [0, -70], y: [0, 44] }
+        }
+        transition={
+          muted
+            ? { duration: 0.4 }
+            : { duration: 30, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }
+        }
       >
         <motion.div
           className="h-full w-full bg-cover bg-center"
@@ -481,23 +541,22 @@ export default function LyricsMograph({
               ? `url(${cover})`
               : `radial-gradient(ellipse at 30% 20%, ${hex}30, transparent 60%), radial-gradient(ellipse at 70% 80%, ${hex}22, transparent 55%)`,
           }}
-          initial={{ filter: "blur(36px) saturate(1.15) brightness(0.5)" }}
-          animate={{ filter: `blur(36px) saturate(${vibe.saturate}) brightness(${vibe.brightness})` }}
+          initial={{ filter: "blur(24px) saturate(1.15) brightness(0.5)" }}
+          animate={{ filter: `blur(24px) saturate(${vibe.saturate}) brightness(${vibe.brightness})` }}
           transition={{ duration: 1.4, ease: "easeInOut" }}
         />
       </motion.div>
       {/* ---------- BACKDROP SHADING & VIGNETTE (Behind the text) ---------- */}
-      {/* ---------- SOFT BACKDROP SHADING & VIGNETTE (Behind text, luminous & visible) ---------- */}
       <motion.div
-        className="pointer-events-none absolute -inset-[50%] z-0"
+        className="pointer-events-none absolute inset-0 z-0"
         style={{
           background:
-            "radial-gradient(130% 130% at 50% 50%, rgba(7,5,15,0.35) 0%, rgba(7,5,15,0.65) 60%, rgba(7,5,15,0.85) 100%)",
+            "radial-gradient(130% 130% at 50% 50%, rgba(20,17,17,0.35) 0%, rgba(20,17,17,0.65) 60%, rgba(20,17,17,0.85) 100%)",
         }}
         animate={{ opacity: vibe.scrim }}
         transition={{ duration: 1.4, ease: "easeInOut" }}
       />
-      <div className="vignette pointer-events-none absolute -inset-[25%] z-0" />
+      <div className="vignette pointer-events-none absolute inset-0 z-0" />
       {/* ---------- centre stack ---------- */}
       <div className="relative z-10 flex h-full flex-col items-center justify-center px-[7%] text-center">
         {/* section badge */}
@@ -511,7 +570,7 @@ export default function LyricsMograph({
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
                 className="border px-5 py-1.5 font-mono text-[15px] font-semibold uppercase"
-                style={{ borderColor: `${hex}55`, color: hex, background: "#07050fcc" }}
+                style={{ borderColor: `${hex}55`, color: hex, background: "#141111cc" }}
               >
                 {section}
               </motion.div>
@@ -610,7 +669,7 @@ export default function LyricsMograph({
                           {c.role}
                         </span>
                         <span className="h-px w-12" style={{ background: `${hex}66` }} />
-                        <span className="font-body text-[32px] font-bold tracking-[0.03em] text-ice/90">
+                        <span className="font-body text-[32px] font-bold tracking-[0.03em] text-ice/70">
                           {c.names.join("  ·  ")}
                         </span>
                       </motion.div>
@@ -664,7 +723,12 @@ export default function LyricsMograph({
                 MANUAL mode shows nothing here - the /lyrics operator owns it. */}
             {audio && !playing && (
               <div className="inline-block border px-4 py-1.5 text-[15px] font-bold tracking-[0.3em]" style={{ borderColor: `${hex}66`, color: hex }}>
-                PRESS P TO PLAY - OR DRIVE FROM /LYRICS
+                {muted ? "MUTED MONITOR - TRACK PLAYS ON STAGE" : "PRESS RIGHT ARROW TO START THE TRACK"}
+              </div>
+            )}
+            {!audio && cur < 0 && (
+              <div className="inline-block border px-4 py-1.5 text-[15px] font-bold tracking-[0.3em]" style={{ borderColor: `${hex}66`, color: hex }}>
+                LIVE BAND - PRESS RIGHT ARROW, WORD BY WORD
               </div>
             )}
             <div className="mt-2 font-body text-[22px] font-bold tracking-[0.2em] text-ice/70">

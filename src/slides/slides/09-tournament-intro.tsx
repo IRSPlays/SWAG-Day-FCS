@@ -25,10 +25,10 @@ export const content = {
   titleBottom: "CLASH",
   serif: "Teachers take the court. Cohorts bring the noise.",
   cohorts: [
-    { id: "sec1", num: "01", name: "TITANS", label: "SEC 1 · LOUDEST CROWD WINS", color: "#23dcff" },
-    { id: "sec2", num: "02", name: "CYCLONES", label: "SEC 2 · LOUDEST CROWD WINS", color: "#ff3da6" },
-    { id: "sec3", num: "03", name: "VIPERS", label: "SEC 3 · LOUDEST CROWD WINS", color: "#ffd23f" },
-    { id: "sec4", num: "04", name: "APEX", label: "SEC 4 & STAFF · LOUDEST CROWD WINS", color: "#8f6bff" },
+    { id: "sec1", num: "01", name: "TITANS", label: "SEC 1 · LOUDEST CROWD WINS", color: "#4758d6" },
+    { id: "sec2", num: "02", name: "CYCLONES", label: "SEC 2 · LOUDEST CROWD WINS", color: "#ea3a3a" },
+    { id: "sec3", num: "03", name: "VIPERS", label: "SEC 3 · LOUDEST CROWD WINS", color: "#eeeded" },
+    { id: "sec4", num: "04", name: "APEX", label: "SEC 4 & STAFF · LOUDEST CROWD WINS", color: "#e1811f" },
   ],
   rules: [
     { n: "01", title: "3 GAUNTLET GAMES", tag: "RELAY · BALANCE BLITZ · SHUTTLECOCK" },
@@ -50,7 +50,7 @@ export default function TournamentIntro() {
   const c = useSlideContent(meta.id, content);
 
   return (
-    <SlideShell className="bg-[#05030c]">
+    <SlideShell>
       <CourtLines />
 
       {/* top broadcast header */}

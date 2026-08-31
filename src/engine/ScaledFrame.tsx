@@ -11,7 +11,7 @@ export const DESIGN_H = 1080;
 
 export default function ScaledFrame({
   children,
-  letterbox = "#05070d",
+  letterbox = "#ffffff",
 }: {
   children: React.ReactNode;
   letterbox?: string;

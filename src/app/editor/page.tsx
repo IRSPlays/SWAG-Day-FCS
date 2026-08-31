@@ -66,7 +66,7 @@ function Fields({
     return (
       <div className="flex flex-col gap-3">
         {node.map((item, i) => (
-          <div key={i} className="border-2 border-ice/10 bg-court/40 p-3">
+          <div key={i} className="border-2 border-ice/10 bg-ice/5 p-3">
             <div className="mb-2 font-body text-[11px] font-bold tracking-[0.25em] text-volt">
               ITEM {i + 1}
             </div>
@@ -120,7 +120,7 @@ export default function EditorPage() {
     dispatch({ type: "override", slideId: selected, patch: setAt(patch as Obj, p, v) });
 
   return (
-    <div className="flex min-h-screen flex-col bg-court text-ice">
+    <div className="page-light flex min-h-screen flex-col bg-court text-ice">
       <header className="flex items-center justify-between border-b-2 border-ice/10 px-5 py-3">
         <div className="flex items-baseline gap-4">
           <span className="font-display text-2xl uppercase">Editor</span>

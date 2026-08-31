@@ -49,7 +49,7 @@ export default function FakeEnding() {
   }, [glitched]);
 
   return (
-    <SlideShell className={glitched ? "bg-[#0a0005]" : "bg-[#05030c]"}>
+    <SlideShell className={glitched ? "bg-[#fbeaea]!" : undefined}>
       <CourtLines />
 
       <AnimatePresence mode="wait">

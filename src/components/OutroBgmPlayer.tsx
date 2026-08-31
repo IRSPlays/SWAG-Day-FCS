@@ -6,6 +6,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
+import { useMuted } from "@/engine/advance";
 import { useShow } from "@/store/show";
 
 export const BGM_TRACKS = [
@@ -57,27 +58,45 @@ function getGlobalAudio(src: string): HTMLAudioElement {
 export default function OutroBgmPlayer({
   className = "",
   defaultSrc = "/audio/september.flac",
+  trackTitle = "September",
+  trackArtist = "Earth, Wind & Fire",
   autoPlay = false,
+  fadeout = false,
 }: {
   className?: string;
   defaultSrc?: string;
+  /** the track this player actually plays — shown even before any bgm-state */
+  trackTitle?: string;
+  trackArtist?: string;
   autoPlay?: boolean;
+  /** ramp volume to zero then pause (the show's final fade-out) */
+  fadeout?: boolean;
 }) {
   const bgm = useShow((s) => s.bgm);
   const dispatch = useShow((s) => s.dispatch);
+  const muted = useMuted();
   const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
     const audio = getGlobalAudio(defaultSrc);
     audio.volume = bgm?.volume ?? 0.45;
 
+    /* MUTED MONITOR (controller): this element is a detached `new Audio()`
+       whose events never reach document-level guards, so the mute has to
+       live here. Never play, never broadcast state from a muted client. */
+    if (muted) {
+      if (!audio.paused) audio.pause();
+      setPlaying(false);
+      return;
+    }
+
     const onPlay = () => {
       setPlaying(true);
       dispatch({
         type: "bgm-state",
         playing: true,
-        track: bgm?.track ?? "September",
-        artist: bgm?.artist ?? "Earth, Wind & Fire",
+        track: trackTitle,
+        artist: trackArtist,
         volume: audio.volume,
       });
     };
@@ -87,8 +106,8 @@ export default function OutroBgmPlayer({
       dispatch({
         type: "bgm-state",
         playing: false,
-        track: bgm?.track ?? "September",
-        artist: bgm?.artist ?? "Earth, Wind & Fire",
+        track: trackTitle,
+        artist: trackArtist,
         volume: audio.volume,
       });
     };
@@ -106,9 +125,25 @@ export default function OutroBgmPlayer({
       audio.removeEventListener("play", onPlay);
       audio.removeEventListener("pause", onPause);
     };
-  }, [defaultSrc, autoPlay, dispatch, bgm?.playing, bgm?.volume, bgm?.track, bgm?.artist]);
+  }, [defaultSrc, autoPlay, dispatch, muted, trackTitle, trackArtist, bgm?.playing, bgm?.volume]);
+
+  /* the final fade — volume ramps to zero, then the music stops */
+  useEffect(() => {
+    if (!fadeout || muted) return;
+    const audio = getGlobalAudio(defaultSrc);
+    const iv = setInterval(() => {
+      const v = Math.max(0, audio.volume - 0.01);
+      audio.volume = v;
+      if (v <= 0) {
+        audio.pause();
+        clearInterval(iv);
+      }
+    }, 80);
+    return () => clearInterval(iv);
+  }, [fadeout, muted, defaultSrc]);
 
   const togglePlay = () => {
+    if (muted) return; /* the monitor can never start the music */
     const audio = getGlobalAudio(defaultSrc);
     if (audio.paused) {
       void audio.play().catch(() => {});
@@ -152,8 +187,7 @@ export default function OutroBgmPlayer({
           NOW PLAYING · OUTRO BGM
         </div>
         <div className="mt-0.5 font-body text-[15px] font-extrabold text-ice">
-          {bgm?.track ?? "September"}{" "}
-          <span className="font-medium text-ice/50">- {bgm?.artist ?? "Earth, Wind & Fire"}</span>
+          {trackTitle} <span className="font-medium text-ice/50">- {trackArtist}</span>
         </div>
       </div>
     </div>

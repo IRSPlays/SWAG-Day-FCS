@@ -40,7 +40,7 @@ export default function Walkway() {
   const c = useSlideContent(meta.id, content);
 
   return (
-    <SlideShell className="bg-[#0a0410]">
+    <SlideShell>
       {/* ---------- vanishing-point runway floor (full bleed) ---------- */}
       <div
         className="pointer-events-none absolute inset-x-0 bottom-[104px] top-[90px] z-0 overflow-hidden"
@@ -54,7 +54,7 @@ export default function Walkway() {
           className="absolute inset-x-[-60%] bottom-[-10%] h-[160%] origin-bottom"
           style={{
             background:
-              "repeating-linear-gradient(0deg, rgba(255,61,166,0.16) 0 6px, transparent 6px 110px), linear-gradient(to bottom, rgba(143,107,255,0.10), rgba(255,61,166,0.22))",
+              "repeating-linear-gradient(0deg, rgba(234,58,58,0.16) 0 6px, transparent 6px 110px), linear-gradient(to bottom, rgba(225,129,31,0.10), rgba(234,58,58,0.22))",
             transformStyle: "preserve-3d",
           }}
         />
@@ -65,10 +65,10 @@ export default function Walkway() {
           className="absolute left-1/2 top-0 h-full w-[420px] -translate-x-1/2"
           style={{
             clipPath: "polygon(46% 0, 54% 0, 92% 100%, 8% 100%)",
-            borderLeft: "3px solid rgba(255,210,63,0.5)",
-            borderRight: "3px solid rgba(255,210,63,0.5)",
+            borderLeft: "3px solid rgba(225,129,31,0.5)",
+            borderRight: "3px solid rgba(225,129,31,0.5)",
             background:
-              "linear-gradient(to bottom, rgba(255,210,63,0.06), rgba(255,61,166,0.14))",
+              "linear-gradient(to bottom, rgba(225,129,31,0.06), rgba(234,58,58,0.14))",
           }}
         />
         {/* horizon glow */}
@@ -76,7 +76,7 @@ export default function Walkway() {
           className="absolute inset-x-0 top-0 h-40"
           style={{
             background:
-              "radial-gradient(60% 100% at 50% 0%, rgba(255,61,166,0.35), transparent 70%)",
+              "radial-gradient(60% 100% at 50% 0%, rgba(234,58,58,0.35), transparent 70%)",
           }}
         />
       </div>

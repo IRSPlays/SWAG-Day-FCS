@@ -26,15 +26,15 @@ export const content = {
     name: "ALLIANCE A",
     cohorts: "SEC 1 + SEC 2",
     teams: "TITANS × CYCLONES",
-    color: "#23dcff",
-    accent: "#ff3da6",
+    color: "#4758d6",
+    accent: "#ea3a3a",
   },
   allianceB: {
     name: "ALLIANCE B",
     cohorts: "SEC 3 + SEC 4",
     teams: "VIPERS × APEX",
-    color: "#ffd23f",
-    accent: "#8f6bff",
+    color: "#eeeded",
+    accent: "#e1811f",
   },
   ticker: [
     "GAME 01 IN PROGRESS",
@@ -56,7 +56,7 @@ export default function GameInflatableRelay() {
   const scoreB = (scores.sec3 ?? 0) + (scores.sec4 ?? 0);
 
   return (
-    <SlideShell className="bg-[#05030c]">
+    <SlideShell>
       <CourtLines />
 
       {/* top broadcast header */}
@@ -80,24 +80,24 @@ export default function GameInflatableRelay() {
           className="relative flex flex-col justify-between p-14"
         >
           {/* background team tint */}
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#23dcff]/10 to-transparent" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#4758d6]/10 to-transparent" />
 
           {/* alliance header */}
           <div className="relative z-10">
-            <div className="inline-block border-2 border-[#23dcff] bg-[#23dcff]/20 px-4 py-1 font-mono text-[14px] font-bold tracking-[0.35em] text-[#23dcff]">
+            <div className="inline-block border-2 border-[#4758d6] bg-[#4758d6]/20 px-4 py-1 font-mono text-[14px] font-bold tracking-[0.35em] text-[#4758d6]">
               {c.allianceA.name}
             </div>
             <h2 className="mt-3 font-display text-[96px] font-black uppercase leading-none tracking-tight text-ice">
               {c.allianceA.cohorts}
             </h2>
-            <p className="mt-2 font-mono text-[18px] font-bold tracking-[0.3em] text-[#23dcff]">
+            <p className="mt-2 font-mono text-[18px] font-bold tracking-[0.3em] text-[#4758d6]">
               {c.allianceA.teams}
             </p>
           </div>
 
           {/* massive live score display */}
           <div className="relative z-10 my-auto flex items-baseline gap-6">
-            <span className="font-display text-[260px] font-black leading-none text-[#23dcff]">
+            <span className="font-display text-[260px] font-black leading-none text-[#4758d6]">
               {scoreA}
             </span>
             <span className="font-mono text-[24px] font-bold tracking-[0.3em] text-ice/40">
@@ -119,24 +119,24 @@ export default function GameInflatableRelay() {
           className="relative flex flex-col justify-between p-14 text-right"
         >
           {/* background team tint */}
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-l from-[#ffd23f]/10 to-transparent" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-l from-[#eeeded]/10 to-transparent" />
 
           {/* alliance header */}
           <div className="relative z-10">
-            <div className="inline-block border-2 border-[#ffd23f] bg-[#ffd23f]/20 px-4 py-1 font-mono text-[14px] font-bold tracking-[0.35em] text-[#ffd23f]">
+            <div className="inline-block border-2 border-[#eeeded] bg-[#eeeded]/20 px-4 py-1 font-mono text-[14px] font-bold tracking-[0.35em] text-[#eeeded]">
               {c.allianceB.name}
             </div>
             <h2 className="mt-3 font-display text-[96px] font-black uppercase leading-none tracking-tight text-ice">
               {c.allianceB.cohorts}
             </h2>
-            <p className="mt-2 font-mono text-[18px] font-bold tracking-[0.3em] text-[#ffd23f]">
+            <p className="mt-2 font-mono text-[18px] font-bold tracking-[0.3em] text-[#eeeded]">
               {c.allianceB.teams}
             </p>
           </div>
 
           {/* massive live score display */}
           <div className="relative z-10 my-auto flex items-baseline justify-end gap-6">
-            <span className="font-display text-[260px] font-black leading-none text-[#ffd23f]">
+            <span className="font-display text-[260px] font-black leading-none text-[#eeeded]">
               {scoreB}
             </span>
             <span className="font-mono text-[24px] font-bold tracking-[0.3em] text-ice/40">

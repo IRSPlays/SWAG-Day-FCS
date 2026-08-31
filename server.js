@@ -148,7 +148,22 @@ app.prepare().then(() => {
   }, 30000);
   heartbeat.unref();
 
+  /* listen on the requested port; if it's taken (e.g. a stale dev server),
+     walk up 3000 -> 3001 -> ... until one is free */
+  const MAX_PORT_TRIES = 10;
+  let tryNo = 0;
+  server.on("error", (err) => {
+    if (err.code === "EADDRINUSE" && tryNo < MAX_PORT_TRIES) {
+      tryNo += 1;
+      console.log(`> port ${port + tryNo - 1} busy, trying ${port + tryNo}...`);
+      server.listen(port + tryNo);
+    } else {
+      throw err;
+    }
+  });
   server.listen(port, () => {
-    console.log(`> SWAG DAY FS ready on http://localhost:${port} ${dev ? "(dev)" : ""}`);
+    const actual = server.address().port;
+    if (actual !== port) console.log(`> NOTE: port ${port} was busy`);
+    console.log(`> SWAG DAY FS ready on http://localhost:${actual} ${dev ? "(dev)" : ""}`);
   });
 });

@@ -25,10 +25,10 @@ export const content = {
   titleBottom: "CROWNED",
   serif: "Glory to the champions. Respect to all 4 cohorts.",
   cohorts: [
-    { id: "sec1", num: "01", name: "TITANS", cohort: "SEC 1", color: "#23dcff" },
-    { id: "sec2", num: "02", name: "CYCLONES", cohort: "SEC 2", color: "#ff3da6" },
-    { id: "sec3", num: "03", name: "VIPERS", cohort: "SEC 3", color: "#ffd23f" },
-    { id: "sec4", num: "04", name: "APEX", cohort: "SEC 4 & STAFF", color: "#8f6bff" },
+    { id: "sec1", num: "01", name: "TITANS", cohort: "SEC 1", color: "#4758d6" },
+    { id: "sec2", num: "02", name: "CYCLONES", cohort: "SEC 2", color: "#ea3a3a" },
+    { id: "sec3", num: "03", name: "VIPERS", cohort: "SEC 3", color: "#eeeded" },
+    { id: "sec4", num: "04", name: "APEX", cohort: "SEC 4 & STAFF", color: "#e1811f" },
   ] as const,
   ticker: [
     "CHAMPIONS CROWNED",
@@ -52,7 +52,7 @@ export default function TournamentPodium() {
   const third = ranked[2];
 
   return (
-    <SlideShell className="bg-[#05030c]">
+    <SlideShell>
       <CourtLines />
 
       {/* top broadcast header */}
@@ -147,7 +147,7 @@ export default function TournamentPodium() {
               transition={{ delay: 0.2, duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
               className="flex w-[280px] flex-col items-center"
             >
-              <span className="font-mono text-[14px] font-black tracking-[0.3em] text-[#ffd23f]">
+              <span className="font-mono text-[14px] font-black tracking-[0.3em] text-[#eeeded]">
                 ★ WINNER ★
               </span>
               <span className="font-display text-[64px] font-black" style={{ color: first.color }}>

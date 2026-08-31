@@ -26,6 +26,9 @@ type Base = { id: string; ts: number };
 
 export type ShowEvent =
   | (Base & { type: "cue"; index: number; dir: Dir })
+  /* the ONE-BUTTON show control: the active slide consumes it (word-step,
+     track start, reveal); if unclaimed the stage advances to the next cue */
+  | (Base & { type: "advance" })
   | (Base & {
       type: "toggle";
       key: "blackout" | "cameraOn" | "qrOn" | "pollOpen" | "surveyOpen";

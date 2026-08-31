@@ -16,9 +16,9 @@ export interface LyricBackdropProps {
 }
 
 const ACCENT_HEX: Record<string, string> = {
-  volt: "#23dcff",
-  mag: "#ff3da6",
-  vio: "#8f6bff",
+  volt: "#4758d6",
+  mag: "#ea3a3a",
+  vio: "#e1811f",
 };
 
 export default function LyricBackdrop({ bpm, energy, accent = "vio" }: LyricBackdropProps) {

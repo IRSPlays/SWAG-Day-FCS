@@ -1,158 +1,157 @@
 "use client";
 
-/* 14 · HONOR & RECOGNITION — Teacher Awards presentation.
-   Award-show stage: single centred gold medallion + ribbon-arched
-   laurels. Completely different silhouette from the side-panel slides. */
+/* 05 · CARING TEACHER AWARDS — recipient roll call.
+    Award-show stage with a living roll: EVERY press of the right arrow
+    reveals the next recipient. The stage announces, the screen follows.
+    When all five are up, the next unclaimed advance moves the show on. */
 
+import { useState } from "react";
 import { motion } from "motion/react";
 import SlideShell, { CourtLines, LiveBug, TickerBand } from "@/layouts/SlideShell";
 import { LetterStagger, ClipWipeReveal } from "@/animations";
 import { useSlideContent } from "@/store/show";
+import { useSlideAction } from "@/engine/advance";
 import type { SlideMeta } from "../types";
 
 export const meta: SlideMeta = {
-  id: "teacher-awards",
-  title: "14 · Honor & Recognition — Teacher Awards",
+  id: "awards-cta",
+  title: "05 · Caring Teacher Awards",
   transition: "whistle-cut",
   durationHint: 300,
   notes:
-    "Award ceremony! Triumphant music up. Spotlight each recipient as they're announced. Keep this slide up the whole segment; drive per-award from /editor if needed.",
+    "NJ introduces the CTA; Mr Kelly Tan presents. PRESS → to reveal each recipient as they are announced: Achmad Nasrun → Leong Mun Yi → Sebastian Poh → Sharifah Nur Hidayah → Tan Han Yu Melvin.",
   accent: "mag",
 };
 
 export const content = {
-  kicker: "HONOR & RECOGNITION · 1020 — 1025",
-  titleTop: "TEACHER",
-  titleBottom: "AWARDS",
-  serif: "For the ones who make it all happen.",
-  awards: [
-    { icon: "🏆", name: "COACH OF THE YEAR", sub: "THE ONE WHO NEVER STOPS BELIEVING" },
-    { icon: "⭐", name: "SUPERSTAR EDUCATOR", sub: "LESSONS THAT FEEL LIKE HEADLINERS" },
-    { icon: "💛", name: "HEART OF THE SCHOOL", sub: "KINDNESS IN EVERY WHISTLE CALL" },
+  kicker: "CARING TEACHER AWARD · PRESENTED BY MR KELLY TAN",
+  titleTop: "CARING",
+  titleBottom: "TEACHER",
+  serif: "for care and passion in every lesson taught.",
+  recipients: [
+    "Mr Achmad Nasrun Bin Abdul Khakam",
+    "Ms Leong Mun Yi",
+    "Mr Sebastian Poh Yi Jie",
+    "Mdm Sharifah Nur Hidayah Binte Omar Albar",
+    "Mr Tan Han Yu Melvin",
   ],
   ticker: [
-    "TEACHER AWARDS",
+    "CARING TEACHER AWARDS",
+    "CONGRATULATIONS",
     "GIVE IT UP FOR OUR TEACHERS",
-    "STANDING OVATION",
     "SWAG DAY '26",
   ],
 };
 
-const GOLD = "#ffd23f";
+const GOLD = "#e1811f";
 
-export default function TeacherAwards() {
+export default function AwardsCta() {
   const c = useSlideContent(meta.id, content);
+  const [shown, setShown] = useState(0);
+
+  /* right arrow = next recipient; once all are up, the cue moves on */
+  useSlideAction(() => {
+    if (shown < c.recipients.length) {
+      setShown(shown + 1);
+      return true;
+    }
+    return false;
+  });
 
   return (
-    <SlideShell className="bg-[#0a0603]">
+    <SlideShell>
       <CourtLines />
 
-      {/* top live bug */}
       <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-between border-b-2 border-ice/10 px-14 py-4">
         <LiveBug label="AWARDS LIVE" />
         <span className="font-mono text-[16px] font-bold tracking-[0.4em]" style={{ color: GOLD }}>
-          TRIUMPHANT MODE
+          {shown}/{c.recipients.length} ANNOUNCED
         </span>
       </div>
 
-      {/* spotlight cones from top centre */}
+      {/* spotlight cones */}
       <motion.div
-        animate={{ opacity: [0.15, 0.4, 0.15] }}
+        animate={{ opacity: [0.12, 0.35, 0.12] }}
         transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
         className="pointer-events-none absolute -top-32 left-1/2 z-0 h-[130%] w-[900px] -translate-x-1/2"
         style={{
-          background: `linear-gradient(to bottom, ${GOLD}40, transparent 65%)`,
+          background: `linear-gradient(to bottom, ${GOLD}38, transparent 65%)`,
           clipPath: "polygon(38% 0, 62% 0, 100% 100%, 0 100%)",
           filter: "blur(10px)",
         }}
       />
 
-      {/* centred ceremonial stack */}
-      <div className="relative z-10 flex h-full flex-col items-center justify-center px-16 pb-16 pt-20 text-center">
-        <ClipWipeReveal delay={0.1} from="top">
-          <span
-            className="inline-block border-2 bg-black/30 px-6 py-2 font-mono text-[14px] font-bold tracking-[0.45em] backdrop-blur-md"
-            style={{ borderColor: `${GOLD}88`, color: GOLD }}
-          >
-            {c.kicker}
-          </span>
-        </ClipWipeReveal>
-
-        {/* medallion + titles */}
-        <div className="relative mt-6">
-          {/* rotating laurel ring */}
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 28, repeat: Infinity, ease: "linear" }}
-            className="pointer-events-none absolute left-1/2 top-1/2 h-[560px] w-[560px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-dashed opacity-30"
-            style={{ borderColor: GOLD }}
-          />
-          <h1 className="font-display uppercase leading-[0.84] tracking-tighter">
-            <LetterStagger text={c.titleTop} delay={0.25} className="block text-[120px] text-ice" />
-            <LetterStagger
-              text={c.titleBottom}
-              delay={0.45}
-              className="block text-[150px]"
-              // gold via per-letter span colouring below
-            />
+      <div className="relative z-10 grid h-full grid-cols-[1fr_1.25fr] items-center gap-12 px-16 pb-20 pt-24">
+        {/* left: the award */}
+        <div>
+          <ClipWipeReveal delay={0.1} from="top">
+            <span
+              className="inline-block border-2 px-5 py-2 font-mono text-[13px] font-bold tracking-[0.35em]"
+              style={{ borderColor: `${GOLD}88`, color: GOLD }}
+            >
+              {c.kicker}
+            </span>
+          </ClipWipeReveal>
+          <h1 className="mt-6 font-display uppercase leading-[0.84] tracking-tighter">
+            <LetterStagger text={c.titleTop} delay={0.3} className="block text-[128px] text-ice" />
+            <div className="block skew-x-[-6deg] text-[128px]" style={{ color: GOLD }}>
+              <LetterStagger text={c.titleBottom} delay={0.55} skewX={-6} />
+            </div>
           </h1>
-          {/* gold overlay for the second line */}
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 bottom-[-6px] select-none font-display text-[150px] uppercase leading-[0.84] tracking-tighter"
-            style={{ color: GOLD, clipPath: "inset(55% 0 0 0)", transform: "skewX(-0deg)" }}
-          >
-            AWARDS
-          </span>
+          <ClipWipeReveal delay={0.75}>
+            <p className="mt-6 max-w-[440px] font-serifit text-[38px] italic leading-tight text-ice/80">
+              {c.serif}
+            </p>
+          </ClipWipeReveal>
         </div>
 
-        <ClipWipeReveal delay={0.7}>
-          <p className="mt-8 font-serifit text-[44px] italic text-ice/85">{c.serif}</p>
-        </ClipWipeReveal>
-
-        {/* the three awards as a horizontal medal row */}
-        <div className="mt-12 flex items-stretch justify-center gap-8">
-          {c.awards.map((a, idx) => (
-            <motion.div
-              key={a.name}
-              initial={{ y: 90, rotate: idx === 1 ? 0 : idx === 0 ? -3 : 3, opacity: 0 }}
-              animate={{ y: 0, rotate: idx === 1 ? 0 : idx === 0 ? -2 : 2, opacity: 1 }}
-              transition={{ delay: 0.9 + idx * 0.22, duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
-              className={`relative w-[430px] overflow-hidden border-2 bg-panel/90 p-7 shadow-2xl backdrop-blur-xl ${
-                idx === 1 ? "-mt-6 pb-11" : ""
-              }`}
-              style={{ borderColor: `${GOLD}66` }}
-            >
-              {/* shine sweep */}
+        {/* right: the living roll call */}
+        <div className="flex flex-col gap-3">
+          {c.recipients.map((name, i) => {
+            const shownYet = i < shown;
+            return (
               <motion.div
-                animate={{ x: ["-130%", "170%"] }}
-                transition={{ duration: 2.6, repeat: Infinity, repeatDelay: 2.2 + idx * 0.6, ease: "easeInOut" }}
-                className="pointer-events-none absolute inset-y-0 w-24 bg-gradient-to-r from-transparent via-white/12 to-transparent"
-              />
-              <div className="flex flex-col items-center gap-3">
+                key={name}
+                initial={false}
+                animate={
+                  shownYet
+                    ? { opacity: 1, x: 0, filter: "blur(0px)" }
+                    : { opacity: 0, x: 60, filter: "blur(8px)" }
+                }
+                transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+                className={`flex items-center gap-5 border-l-8 bg-panel/80 py-4 pl-6 pr-8 ${
+                  i === shown - 1 ? "border-mag shadow-2xl" : "border-volt/40"
+                }`}
+                style={{ borderColor: i === shown - 1 ? GOLD : undefined }}
+              >
                 <span
-                  className="grid h-20 w-20 place-items-center rounded-full border-4 text-[40px]"
-                  style={{ borderColor: GOLD, background: "rgba(0,0,0,0.35)" }}
+                  className="font-display text-[30px] font-black tabular-nums"
+                  style={{ color: i === shown - 1 ? GOLD : `${GOLD}77` }}
                 >
-                  {a.icon}
+                  {String(i + 1).padStart(2, "0")}
                 </span>
-                <div
-                  className="font-display text-[34px] font-black uppercase leading-none tracking-tight"
-                  style={{ color: GOLD }}
-                >
-                  {a.name}
+                <div>
+                  <div className="font-body text-[30px] font-bold leading-tight tracking-[0.02em] text-ice">
+                    {name}
+                  </div>
+                  {i === shown - 1 && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.3 }}
+                      className="mt-0.5 font-mono text-[12px] font-bold tracking-[0.4em]"
+                      style={{ color: GOLD }}
+                    >
+                      COME ON UP
+                    </motion.div>
+                  )}
                 </div>
-                <div className="font-mono text-[12px] font-bold tracking-[0.25em] text-ice/60">
-                  {a.sub}
-                </div>
-                <span className="mt-1 h-1.5 w-16" style={{ background: GOLD }} />
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
       </div>
 
-      {/* bottom ticker */}
       <div className="absolute inset-x-0 bottom-0 z-30">
         <TickerBand items={c.ticker} />
       </div>

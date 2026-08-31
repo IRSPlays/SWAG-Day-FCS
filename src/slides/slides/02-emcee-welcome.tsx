@@ -2,7 +2,9 @@
 
 /* 02 · GRAND OPENING — "WHAT IS UP, ADMIRALTY!"
    Emcee intro splash: giant shouted lines, mic-drop energy, theme banner.
-   Unique layout: full-bleed centre shout stack + bottom dual-emcee bar. */
+   Unique layout: full-bleed centre shout stack + bottom dual-emcee bar.
+   Script beat: Razan credits the SWAG Day appreciation cards —
+   "made by Lovelle Tew from Aquila 5" — card shown beside the shout. */
 
 import { motion } from "motion/react";
 import SlideShell, { CourtLines, LiveBug } from "@/layouts/SlideShell";
@@ -12,11 +14,11 @@ import type { SlideMeta } from "../types";
 
 export const meta: SlideMeta = {
   id: "emcee-welcome",
-  title: "02 · Emcee Welcome — Najwa & Rayyan",
+  title: "02 · Emcee Welcome — NJ & Razan",
   transition: "baton-change",
   durationHint: 14,
   notes:
-    "Najwa: 'WHAT IS UP, ADMIRALTY! Welcome to SWAG DAY 2026!' Rayyan: 'I can't hear you! I said, ARE YOU READY? Today we Suit Up, Show Up and Sport it Up! We are your hosts, Najwa and Rayyan!'",
+    "NJ: 'WHAT IS UP, ADMIRALTY! Welcome to SWAG DAY 2026!' Razan: 'ARE YOU READY? We are your hosts, NJ and Razan, and we are going to make this the most legendary SWAG Day ever!' NJ: 'Today is about celebrating our teachers and staff.' Razan: 'Hope all of you have been Spreading Warmth and Gratitude to all staff — especially using the SWAG Day appreciation cards made by Lovelle Tew from Aquila 5!' (card on screen) NJ: 'This year's theme is all about sports — Suit Up, Show Up, Sport it Up!'",
   accent: "mag",
 };
 
@@ -26,9 +28,12 @@ export const content = {
   shout3: "ARE YOU READY?",
   themeLine: "SUIT UP! SHOW UP! SPORT IT UP!",
   yearBadge: "SWAG DAY 2026",
+  cardImage: "/SWAG-Day-Card.jpg",
+  cardKicker: "SPREAD WARMTH & GRATITUDE",
+  cardCredit: "APPRECIATION CARDS DESIGNED BY LOVELLE TEW YU SI · AQUILA 5",
   emcees: [
-    { name: "NAJWA", role: "YOUR HOST" },
-    { name: "RAYYAN", role: "YOUR HOST" },
+    { name: "NJ", role: "YOUR HOST" },
+    { name: "RAZAN", role: "YOUR HOST" },
   ],
 };
 
@@ -36,7 +41,7 @@ export default function EmceeWelcome() {
   const c = useSlideContent(meta.id, content);
 
   return (
-    <SlideShell className="bg-[#08030d]">
+    <SlideShell>
       <CourtLines />
 
       {/* top live bug row */}
@@ -55,7 +60,7 @@ export default function EmceeWelcome() {
           className="h-[160%] w-[130%]"
           style={{
             background:
-              "conic-gradient(from 180deg at 50% 42%, transparent 0deg, rgba(255,61,166,0.12) 12deg, transparent 24deg, rgba(35,220,255,0.10) 38deg, transparent 50deg, rgba(255,210,63,0.08) 66deg, transparent 78deg)",
+              "conic-gradient(from 180deg at 50% 42%, transparent 0deg, rgba(234,58,58,0.12) 12deg, transparent 24deg, rgba(71,88,214,0.10) 38deg, transparent 50deg, rgba(225,129,31,0.08) 66deg, transparent 78deg)",
           }}
         />
       </div>
@@ -102,6 +107,36 @@ export default function EmceeWelcome() {
         </motion.div>
       </div>
 
+      {/* the appreciation card — script credit: Lovelle Tew Yu Si (Aquila 5) */}
+      <motion.div
+        initial={{ x: 120, opacity: 0, rotate: 10 }}
+        animate={{ x: 0, opacity: 1, rotate: 4 }}
+        transition={{ delay: 1.1, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        className="absolute right-14 top-[16%] z-20 w-[340px]"
+      >
+        <motion.div
+          animate={{ y: [0, -10, 0] }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+          className="border-2 border-ice/15 bg-panel/90 p-3 shadow-2xl backdrop-blur-md"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={c.cardImage}
+            alt="SWAG Day 2026 appreciation card"
+            className="aspect-[4/3] w-full object-cover"
+            draggable={false}
+          />
+          <div className="px-1 pb-1 pt-3 text-left">
+            <div className="font-mono text-[12px] font-bold tracking-[0.3em] text-vio">
+              {c.cardKicker}
+            </div>
+            <div className="mt-1.5 font-mono text-[13px] font-bold leading-relaxed tracking-[0.12em] text-ice/75">
+              {c.cardCredit}
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+
       {/* bottom dual-emcee bar — unique to this slide */}
       <div className="absolute inset-x-0 bottom-0 z-20 flex justify-center gap-6 border-t-2 border-ice/10 bg-court/85 py-5 backdrop-blur-md">
         {c.emcees.map((m, i) => (
@@ -111,7 +146,7 @@ export default function EmceeWelcome() {
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 1.5 + i * 0.18, duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
             className="flex min-w-[420px] items-center gap-5 border-l-8 px-8 py-2"
-            style={{ borderColor: i === 0 ? "#ff3da6" : "#23dcff" }}
+            style={{ borderColor: i === 0 ? "#ea3a3a" : "#4758d6" }}
           >
             <span className="text-[42px] leading-none">{i === 0 ? "🎤" : "🎙️"}</span>
             <div>

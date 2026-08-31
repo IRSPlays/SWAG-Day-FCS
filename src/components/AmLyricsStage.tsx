@@ -37,9 +37,9 @@ export interface AmLyricsStageProps {
 }
 
 const ACCENT_HEX: Record<string, string> = {
-  volt: "#23dcff",
-  mag: "#ff3da6",
-  vio: "#8f6bff",
+  volt: "#4758d6",
+  mag: "#ea3a3a",
+  vio: "#e1811f",
 };
 
 /* ---------- cue list -> TTML (word-synced, generated locally) ---------- */
@@ -150,7 +150,7 @@ export default function AmLyricsStage({
       if (dead || !hostRef.current) return;
       el = document.createElement("am-lyrics");
       el.ttml = ttmlDoc;
-      el.highlightColor = "#f4f7ff";
+      el.highlightColor = "#eeeded";
       el.fontFamily = "'Space Grotesk', 'Segoe UI', sans-serif";
       el.autoscroll = true;
       el.interpolate = true;
@@ -247,7 +247,7 @@ export default function AmLyricsStage({
           transition={{ duration: beat * 8, repeat: Infinity, ease: "easeInOut" }}
         />
         <div className="bg-lanes absolute inset-0 opacity-[0.05]" />
-        <div className="absolute inset-0" style={{ background: "radial-gradient(120% 90% at 50% 45%, transparent 55%, #08060f 100%)" }} />
+        <div className="absolute inset-0" style={{ background: "radial-gradient(120% 90% at 50% 45%, transparent 55%, #1b1818 100%)" }} />
       </div>
 
       {/* the track itself - when present it IS the clock (P = play/pause) */}
@@ -278,14 +278,14 @@ export default function AmLyricsStage({
               animate={{ opacity: [0.5, 0.85, 0.5], scale: [0.98, 1.02, 0.98] }}
               transition={{ duration: beat * 4, repeat: Infinity, ease: "easeInOut" }}
             />
-            <div className="relative border border-[#f4f7ff1f] bg-[#0d0a1c] p-[10px]">
+            <div className="relative border border-[#eeeded1f] bg-[#242020] p-[10px]">
               {cover ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img src={cover} alt={`${header.song} cover art`} className="block h-[420px] w-[420px] object-cover" draggable={false} />
               ) : (
-                <div className="h-[420px] w-[420px]" style={{ background: `linear-gradient(140deg, ${hex}22, #0d0a1c)` }} />
+                <div className="h-[420px] w-[420px]" style={{ background: `linear-gradient(140deg, ${hex}22, #242020)` }} />
               )}
-              <div className="absolute right-[22px] top-[22px] flex items-center gap-2 border px-3 py-1.5" style={{ borderColor: `${hex}66`, background: "#08060fdd" }}>
+              <div className="absolute right-[22px] top-[22px] flex items-center gap-2 border px-3 py-1.5" style={{ borderColor: `${hex}66`, background: "#1b1818dd" }}>
                 <motion.span
                   className="inline-block h-2 w-2 rounded-full"
                   style={{ background: hex }}
@@ -299,10 +299,10 @@ export default function AmLyricsStage({
 
           {/* song progress under the sleeve */}
           <div>
-            <div className="h-[3px] w-full bg-[#f4f7ff14]">
+            <div className="h-[3px] w-full bg-[#eeeded14]">
               <div ref={barRef} className="h-full w-0" style={{ background: hex }} />
             </div>
-            <div className="mt-3 flex items-center justify-between text-[12px] font-bold tracking-[0.3em] text-[#f4f7ff66]">
+            <div className="mt-3 flex items-center justify-between text-[12px] font-bold tracking-[0.3em] text-[#eeeded66]">
               <span>NOW PERFORMING</span>
               <span style={{ color: hex }}>{section.toUpperCase()}</span>
             </div>
@@ -323,7 +323,7 @@ export default function AmLyricsStage({
               animate={{ scaleX: 1 }}
               transition={{ delay: 0.5, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             />
-            <div className="mt-4 text-[26px] font-medium tracking-[0.14em] text-[#f4f7ff99]">{header.artist}</div>
+            <div className="mt-4 text-[26px] font-medium tracking-[0.14em] text-[#eeeded99]">{header.artist}</div>
             {audio ? (
               !playing && (
                 <div
@@ -334,7 +334,7 @@ export default function AmLyricsStage({
                 </div>
               )
             ) : manual ? (
-              <div className="mt-5 inline-block border border-[#ff3da655] px-3 py-1 text-[12px] font-bold tracking-[0.3em] text-[#ff3da6]">
+              <div className="mt-5 inline-block border border-[#ea3a3a55] px-3 py-1 text-[12px] font-bold tracking-[0.3em] text-[#ea3a3a]">
                 MANUAL - R TO RE-SYNC
               </div>
             ) : null}
@@ -343,8 +343,8 @@ export default function AmLyricsStage({
 
         {/* RIGHT - the am-lyrics monochrome stack */}
         <div className="relative h-[880px] flex-1">
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-28" style={{ background: "linear-gradient(#08060f, transparent)" }} />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-28" style={{ background: "linear-gradient(transparent, #08060f)" }} />
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-28" style={{ background: "linear-gradient(#1b1818, transparent)" }} />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-28" style={{ background: "linear-gradient(transparent, #1b1818)" }} />
           <motion.div
             ref={hostRef}
             className="h-full w-full"

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import AmbientBackground from "@/components/AmbientBackground";
 
 const routes = [
   { href: "/preview", name: "PREVIEW", desc: "Reference deck · motion sandbox", status: "LIVE", live: true },
@@ -14,8 +15,9 @@ const routes = [
 
 export default function Home() {
   return (
-    <main className="relative flex min-h-screen flex-col overflow-hidden bg-court text-ice">
+    <main className="page-light relative flex min-h-screen flex-col overflow-hidden bg-court text-ice">
       {/* textures */}
+      <AmbientBackground />
       <div className="bg-lanes pointer-events-none absolute inset-0" />
       <div className="bg-noise pointer-events-none absolute inset-0 opacity-[0.06] mix-blend-overlay" />
 

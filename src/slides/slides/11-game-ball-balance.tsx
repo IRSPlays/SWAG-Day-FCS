@@ -25,10 +25,10 @@ export const content = {
   titleBottom: "THE BALL",
   serif: "1 teacher per cohort. Steady hands. Zero drops.",
   teams: [
-    { id: "sec1", num: "01", cohort: "SEC 1", name: "TITANS", color: "#23dcff" },
-    { id: "sec2", num: "02", cohort: "SEC 2", name: "CYCLONES", color: "#ff3da6" },
-    { id: "sec3", num: "03", cohort: "SEC 3", name: "VIPERS", color: "#ffd23f" },
-    { id: "sec4", num: "04", cohort: "SEC 4", name: "APEX", color: "#8f6bff" },
+    { id: "sec1", num: "01", cohort: "SEC 1", name: "TITANS", color: "#4758d6" },
+    { id: "sec2", num: "02", cohort: "SEC 2", name: "CYCLONES", color: "#ea3a3a" },
+    { id: "sec3", num: "03", cohort: "SEC 3", name: "VIPERS", color: "#eeeded" },
+    { id: "sec4", num: "04", cohort: "SEC 4", name: "APEX", color: "#e1811f" },
   ],
   ticker: [
     "GAME 02 IN PROGRESS",
@@ -45,7 +45,7 @@ export default function GameBallBalance() {
   const scores = useShow((s) => s.scores);
 
   return (
-    <SlideShell className="bg-[#05030c]">
+    <SlideShell>
       <CourtLines />
 
       {/* top broadcast header */}

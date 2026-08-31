@@ -76,7 +76,7 @@ export default function PreviewPage() {
   }, [autoplay]);
 
   return (
-    <div className="flex h-screen select-none flex-col bg-[#05070d] text-ice">
+    <div className="page-light flex h-screen select-none flex-col bg-white text-ice">
       {/* header */}
       <header className="flex items-center justify-between border-b border-ice/10 px-6 py-3">
         <div className="flex items-baseline gap-4">

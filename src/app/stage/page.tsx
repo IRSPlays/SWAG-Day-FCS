@@ -10,6 +10,7 @@ import DeckPlayer from "@/engine/DeckPlayer";
 import ReactionLayer from "@/components/ReactionLayer";
 import Countdown from "@/components/Countdown";
 import CameraWindow from "@/components/CameraWindow";
+import { fireSlideAction } from "@/engine/advance";
 import { useShow } from "@/store/show";
 import { useEffectiveDeck } from "@/store/deckSelect";
 import { getTransport } from "@/realtime/transport";
@@ -30,24 +31,40 @@ export default function StagePage() {
     init();
   }, [init]);
 
-  /* execute audio commands on THIS machine */
+  /* THE ONE-BUTTON ADVANCE — the active slide claims it first
+     (word-step / track start / reveal), else the deck moves on. */
+  const last = deckList.length - 1;
+  const doAdvance = () => {
+    if (fireSlideAction()) return;
+    const s = useShow.getState();
+    dispatch({ type: "cue", index: Math.min(last, s.index + 1), dir: 1 });
+  };
+
+  /* execute audio commands on THIS machine + honor advance events
+     dispatched from the controller console. The store already applied the
+     slide action for this event (every client mirrors it) — if the slide
+     DECLINED it, the deck moves to the next cue. */
   useEffect(() => {
     const t = getTransport();
     return t.subscribe((ev) => {
       if (ev.type === "audio") audioEngine.exec(ev.cmd);
+      else if (ev.type === "advance" && !fireSlideAction(ev.id)) {
+        const s = useShow.getState();
+        dispatch({ type: "cue", index: Math.min(last, s.index + 1), dir: 1 });
+      }
     });
-  }, []);
+  }, [last, dispatch]);
 
   /* keyboard */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const last = deckList.length - 1;
       if (e.code === "ArrowRight" || e.code === "Space" || e.code === "PageDown") {
         e.preventDefault();
-        dispatch({ type: "cue", index: Math.min(last, index + 1), dir: 1 });
+        doAdvance();
       } else if (e.code === "ArrowLeft" || e.code === "PageUp") {
         e.preventDefault();
-        dispatch({ type: "cue", index: Math.max(0, index - 1), dir: -1 });
+        const s = useShow.getState();
+        dispatch({ type: "cue", index: Math.max(0, s.index - 1), dir: -1 });
       } else if (e.code === "Escape" || e.code === "KeyB") {
         dispatch({ type: "toggle", key: "blackout", on: !useShow.getState().blackout });
       } else if (e.code === "KeyC") {
@@ -59,13 +76,13 @@ export default function StagePage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [index, deckList.length, dispatch]);
+  }, [deckList.length, dispatch]);
 
   const current = deckList[Math.max(0, Math.min(index, deckList.length - 1))];
   if (!current) return null;
 
   return (
-    <main className="fixed inset-0 select-none overflow-hidden bg-black">
+    <main className="page-light fixed inset-0 select-none overflow-hidden bg-white">
       <DeckPlayer slide={current} dir={dir} />
       <ReactionLayer />
       {/* always mounted: multi-camera hub keeps every phone connected so the

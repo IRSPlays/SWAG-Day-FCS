@@ -1,32 +1,37 @@
 import type { Metadata } from "next";
-import { Anton, Instrument_Serif, IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const anton = Anton({
-  subsets: ["latin"],
+const anton = localFont({
+  src: "./fonts/Anton-400.woff2",
   weight: "400",
   variable: "--font-anton",
   display: "swap",
 });
 
-const instrument = Instrument_Serif({
-  subsets: ["latin"],
-  weight: "400",
-  style: ["normal", "italic"],
+const instrument = localFont({
+  src: [
+    { path: "./fonts/InstrumentSerif-400.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/InstrumentSerif-400-italic.woff2", weight: "400", style: "italic" },
+  ],
   variable: "--font-instrument",
   display: "swap",
 });
 
-const grotesk = Space_Grotesk({
-  subsets: ["latin"],
+const grotesk = localFont({
+  src: "./fonts/SpaceGrotesk-300-700.woff2",
+  weight: "300 700",
   variable: "--font-grotesk",
   display: "swap",
 });
 
 /* editorial mono - credits, badges, chrome labels (gig-poster voice) */
-const plex = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
+const plex = localFont({
+  src: [
+    { path: "./fonts/IBMPlexMono-400.woff2", weight: "400" },
+    { path: "./fonts/IBMPlexMono-500.woff2", weight: "500" },
+    { path: "./fonts/IBMPlexMono-600.woff2", weight: "600" },
+  ],
   variable: "--font-plex",
   display: "swap",
 });

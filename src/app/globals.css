@@ -6,15 +6,14 @@
    ============================================================ */
 
 @theme {
-  /* palette — engineered to PUNCH THROUGH yellow stage light:
-     cool saturated hues + crisp white on violet-black.
-     No yellows, no creams — they die under amber gels. */
-  --color-court: #08060f;   /* violet-black — the base */
-  --color-panel: #140f2b;   /* raised surface */
-  --color-ice: #f4f7ff;     /* crisp cool white — primary text */
-  --color-volt: #23dcff;    /* electric cyan — championship accent */
-  --color-mag: #ff3da6;     /* hot magenta — live/hot cues */
-  --color-vio: #8f6bff;     /* ultraviolet — secondary voice */
+  /* palette — varsity bold: royal blue / red / orange on warm black,
+     crisp off-white for text. Built to read through stage wash. */
+  --color-court: #1b1818;   /* warm black — the base */
+  --color-panel: #242020;   /* raised surface */
+  --color-ice: #eeeded;     /* off-white — primary text */
+  --color-volt: #4758d6;    /* royal blue — championship accent */
+  --color-mag: #ea3a3a;     /* red — live/hot cues */
+  --color-vio: #e1811f;     /* orange — secondary voice */
 }
 
 @theme inline {
@@ -43,6 +42,22 @@
   button {
     cursor: pointer;
   }
+}
+
+/* ---- light-surface pages (controller, editor, stage, slides) ----
+   Flips the token values inside the subtree: white background,
+   dark text; the blue/red/orange accents stay. Lyric pages and
+   the performance slides stay dark (LyricsMograph paints its own). */
+.page-light {
+  --color-court: #ffffff;
+  --color-panel: #f1f0ef;
+  --color-ice: #1b1818;
+  background: #ffffff;
+}
+
+/* light-scope vignette: whisper-subtle edge falloff instead of the dark one */
+.page-light .vignette {
+  background: radial-gradient(130% 130% at 50% 42%, transparent 62%, rgba(27, 24, 24, 0.08) 100%);
 }
 
 /* ---------------- broadcast textures ---------------- */
@@ -87,7 +102,7 @@
 
 /* projector-friendly edge falloff */
 @utility vignette {
-  background: radial-gradient(130% 130% at 50% 42%, transparent 55%, rgba(6, 3, 16, 0.66) 100%);
+  background: radial-gradient(130% 130% at 50% 42%, transparent 55%, rgba(10,8,8, 0.66) 100%);
 }
 
 /* outlined display numerals */
@@ -100,7 +115,7 @@
    the lit state is toggled directly from the rAF loop (no re-renders). */
 .lw {
   color: color-mix(in srgb, var(--color-ice) 48%, transparent);
-  text-shadow: 0 2px 22px rgba(5, 3, 12, 0.9), 0 0 8px rgba(5, 3, 12, 0.6);
+  text-shadow: 0 2px 22px rgba(0,0,0, 0.9), 0 0 8px rgba(0,0,0, 0.6);
   transition:
     color 0.32s ease,
     text-shadow 0.32s ease,
@@ -110,9 +125,9 @@
 .lw.on {
   color: #ffffff;
   transform: translateY(-0.03em) scale(1.05);
-  text-shadow: 0 4px 18px rgba(5, 3, 12, 0.9);
+  text-shadow: 0 4px 18px rgba(0,0,0, 0.9);
 }
 .lw.accent-on.on {
-  color: var(--lw-accent, #8f6bff);
+  color: var(--lw-accent, #e1811f);
 }
 

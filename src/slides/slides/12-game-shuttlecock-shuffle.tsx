@@ -38,14 +38,14 @@ export const content = {
   ],
 };
 
-const TEAM_COLORS = ["#23dcff", "#ff3da6", "#ffd23f", "#8f6bff"];
+const TEAM_COLORS = ["#4758d6", "#ea3a3a", "#eeeded", "#e1811f"];
 
 export default function GameShuttlecockShuffle() {
   const c = useSlideContent(meta.id, content);
   const scores = useShow((s) => s.scores);
 
   return (
-    <SlideShell className="bg-[#05030c]">
+    <SlideShell>
       <CourtLines />
 
       {/* top broadcast header */}

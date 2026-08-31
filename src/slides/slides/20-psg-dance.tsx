@@ -11,11 +11,11 @@ import type { SlideMeta } from "../types";
 
 export const meta: SlideMeta = {
   id: "psg-dance",
-  title: "20 · Surprise PSG Dance",
+  title: "11 · PSG Dance Explosion",
   transition: "baton-change",
   durationHint: 240,
   notes:
-    "PSG EXPLOSION! Parents storm the stage. Tracks: I Want It That Way (remix) into Beat It. Switch floor camera to Fullscreen / PIP for dance action!",
+    "PSG mid-show surprise! Parents perform to show appreciation to all staff. Tracks: I Want It That Way (remix) into Beat It. Switch floor camera to Fullscreen / PIP for dance action!",
   accent: "mag",
 };
 
@@ -26,8 +26,8 @@ export const content = {
   serif: "Special tribute performance by the Parent Support Group.",
   performers: "PARENT SUPPORT GROUP DANCE CREW",
   songs: [
-    { title: "I WANT IT THAT WAY", artist: "BACKSTREET BOYS · PSG REMIX", badge: "REMIX INTRO", color: "#ff3da6" },
-    { title: "BEAT IT", artist: "MICHAEL JACKSON", badge: "POP ROCK", color: "#23dcff" },
+    { title: "I WANT IT THAT WAY", artist: "BACKSTREET BOYS · PSG REMIX", badge: "REMIX INTRO", color: "#ea3a3a" },
+    { title: "BEAT IT", artist: "MICHAEL JACKSON", badge: "POP ROCK", color: "#4758d6" },
   ],
   ticker: [
     "SURPRISE PSG DANCE",
@@ -45,7 +45,7 @@ export default function PsgDance() {
   const activeCam = useShow((s) => s.activeCam);
 
   return (
-    <SlideShell className="bg-[#08020d]">
+    <SlideShell>
       <CourtLines />
 
       {/* top broadcast header */}

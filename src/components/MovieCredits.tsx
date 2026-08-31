@@ -20,33 +20,38 @@ export const DEFAULT_CREDITS: CreditSection[] = [
     role: "Full-Stack System Engineering, Realtime Transport & Stage Direction",
   },
   {
-    title: "GAME MASTERS & TOURNAMENT HOSTS",
-    names: ["Haziq", "Tournament Host 2", "Tournament Host 3"],
-    role: "Mic Direction & Arena Crowd Control",
-  },
-  {
-    title: "FLOOR BROADCAST CAMERA CREW",
-    names: ["Floor Cameraman 01", "Floor Cameraman 02"],
-    role: "Live Multi-Camera WebRTC Mobile Streaming",
-  },
-  {
-    title: "STAGE CONTROLLER & AUDIO DIRECTORS",
-    names: ["Tech Director", "Sound Engineer"],
-    role: "Audio Engine, Soundboard FX & Live Camera Switching",
-  },
-  {
     title: "MASTERS OF CEREMONIES",
-    names: ["Lead MC 01", "Lead MC 02"],
+    names: ["NJ", "Razan"],
   },
   {
-    title: "FEATURED MUSICAL PERFORMERS",
+    title: "MAIN IC & GAME MASTERS",
+    names: ["Haziq", "Aqil", "Jeffrey"],
+    role: "Guess Whose Desk · Arena Crowd Control",
+  },
+  {
+    title: "BACKSTAGE ICS",
+    names: ["Lovelle", "Joel"],
+    role: "Ushering · Time Management · Performer Management",
+  },
+  {
+    title: "SLIDES & MUSIC OPERATORS",
+    names: ["Alisya", "Kai Qing"],
+    role: "The Start Tree · Show Control · Lyric Console",
+  },
+  {
+    title: "ON-GROUND CREW",
+    names: ["Jeffery — Gifts", "Rianne — Ushering Mr Tan", "Nuzhah & Zhun Keat — Alumni Flow"],
+  },
+  {
+    title: "FEATURED PERFORMANCES",
     names: [
-      "Haziq (Piano)",
-      "Daniel (Vocals)",
-      "Syazwan (Vocals)",
-      "Anaqi (Vocals)",
-      "Student Rock Band",
-      "Vocal Ensemble & Acoustic Duet",
+      "Lunar6tactics — Still Into You",
+      "Raien — Ditto",
+      "Kylie — Flashlight",
+      "Airis & Serena — Untuk Dia",
+      "Xiang Rui — Solo",
+      "Rayyan Group — Everlong",
+      "Haziq & Syazwan — Pulang",
     ],
     columns: true,
   },
@@ -56,21 +61,12 @@ export const DEFAULT_CREDITS: CreditSection[] = [
     role: "Surprise Dance Performance",
   },
   {
-    title: "COHORT TEACHER CHAMPIONS",
-    names: [
-      "Sec 1 Titans Teacher Rep",
-      "Sec 2 Cyclones Teacher Rep",
-      "Sec 3 Vipers Teacher Rep",
-      "Sec 4 & Staff Apex Teacher Rep",
-    ],
-    columns: true,
-  },
-  {
     title: "SPECIAL THANKS",
     names: [
+      "Mr Kelly Tan — Address & Award Presentation",
       "School Leadership & Principal",
       "All Teachers, Coaches & Support Staff",
-      "Student Council & AV Crew",
+      "Student Council & LHP Crew",
       "The Entire Student Body of 2026",
     ],
     columns: true,
@@ -87,8 +83,6 @@ export default function MovieCredits({
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [scrollY, setScrollY] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-
   useEffect(() => {
     let raf = 0;
     let lastTime = performance.now();
@@ -97,7 +91,7 @@ export default function MovieCredits({
       const dt = (now - lastTime) / 1000;
       lastTime = now;
 
-      if (!isPaused && contentRef.current && containerRef.current) {
+      if (contentRef.current && containerRef.current) {
         const contentHeight = contentRef.current.offsetHeight;
         const containerHeight = containerRef.current.offsetHeight;
         const maxScroll = contentHeight + containerHeight * 0.4;
@@ -117,18 +111,17 @@ export default function MovieCredits({
 
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [speed, isPaused]);
+  }, [speed]);
 
   return (
     <div
       ref={containerRef}
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
       className="relative h-full w-full overflow-hidden select-none"
     >
-      {/* top and bottom cinematic gradient vignettes */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-44 bg-gradient-to-b from-[#05040c] via-[#05040c]/80 to-transparent" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-44 bg-gradient-to-t from-[#05040c] via-[#05040c]/80 to-transparent" />
+      {/* edge fades in the page colour so names dissolve softly at the
+          frame's top and bottom — never dark bands on the white stage */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-44 bg-gradient-to-b from-white via-white/85 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-44 bg-gradient-to-t from-white via-white/85 to-transparent" />
 
       {/* scrolling credit roll container */}
       <div

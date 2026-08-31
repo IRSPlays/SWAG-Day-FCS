@@ -1,7 +1,8 @@
 "use client";
 
-/* 18 · PERFORMANCE 08 — "Untuk Dia" (SleeQ feat. Najwa Latif).
-    Synced TTML (lrclib) + official track. Malay pop duet closer. */
+/* 12 · PERFORMANCE — "Untuk Dia" (SleeQ feat. Najwa Latif).
+    Word-synced TTML + the INSTRUMENTAL track (the duet sings live over
+    it). RIGHT ARROW starts the track; lyrics follow the clock. */
 
 import SlideShell from "@/layouts/SlideShell";
 import LyricsMograph from "@/components/LyricsMograph";
@@ -10,16 +11,16 @@ import type { SlideMeta } from "../types";
 
 export const meta: SlideMeta = {
   id: "perf-untuk-dia",
-  title: "18 · Performance 8 — Untuk Dia",
+  title: "12 · Airis & Serena — Untuk Dia",
   transition: "baton-change",
   durationHint: 222,
   notes:
-    "Block B finale! Press P to start the track; lyrics follow it. Duet performance by Serena & Airis.",
+    "Duet from Phoenix 4! RIGHT ARROW starts the track; lyrics follow it. Their confidence is unmatched.",
   accent: "vio",
 };
 
 export const content = {
-  kind: "MALAY POP DUET · BLOCK B FINALE",
+  kind: "MALAY POP DUET",
   song: "UNTUK DIA",
   artist: "SLEEQ FEAT. NAJWA LATIF",
 };
@@ -53,7 +54,7 @@ export default function PerfUntukDia() {
         accent="vio"
         cover="/covers/untuk-dia.jpg"
         ttmlUrl="/lyrics/untuk-dia.ttml"
-        audio="/audio/untuk-dia.flac"
+        audio="/audio/untuk-dia-instrumental.wav"
         sections={sections}
         credits={performers}
         slideId={meta.id}

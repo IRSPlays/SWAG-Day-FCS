@@ -10,15 +10,16 @@ import type { SlideMeta } from "../types";
 
 export const meta: SlideMeta = {
   id: "perf-ditto",
-  title: "06 · Performance 2 — Ditto",
+  title: "09 · Raien — Ditto (Dance)",
   transition: "track-sweep",
   durationHint: 185,
-  notes: "Vocal & Dance performance! Upbeat pop energy. P to play.",
+  notes:
+    "Raien's dance item! RIGHT ARROW starts the track — the track is the clock, lyrics light up on their own.",
   accent: "mag",
 };
 
 export const content = {
-  kind: "VOCAL & DANCE PERFORMANCE 02",
+  kind: "DANCE PERFORMANCE",
   song: "DITTO",
   artist: "NEWJEANS",
 };

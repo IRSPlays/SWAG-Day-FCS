@@ -6,6 +6,7 @@
 
 import type { ReactNode } from "react";
 import { MarqueeTicker } from "@/animations";
+import AmbientBackground from "@/components/AmbientBackground";
 
 export function CornerTicks() {
   const base = "absolute h-8 w-8 border-ice/25";
@@ -63,7 +64,8 @@ export default function SlideShell({
   className?: string;
 }) {
   return (
-    <div className={`relative h-full w-full overflow-hidden bg-court text-ice ${className}`}>
+    <div className={`page-light relative h-full w-full overflow-hidden bg-white text-ice ${className}`}>
+      <AmbientBackground />
       <div className="vignette pointer-events-none absolute inset-0 z-0" />
       <div className="relative z-10 h-full w-full">{children}</div>
       <div className="bg-noise pointer-events-none absolute inset-0 z-20 opacity-[0.06] mix-blend-overlay" />

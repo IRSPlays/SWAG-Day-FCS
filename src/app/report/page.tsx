@@ -49,7 +49,7 @@ export default function ReportPage() {
   const label = "font-body text-[12px] font-bold tracking-[0.3em] text-ice/50";
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-5 bg-court px-6 py-8 text-ice">
+    <main className="page-light mx-auto flex min-h-screen max-w-5xl flex-col gap-5 bg-court px-6 py-8 text-ice">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="font-body text-[11px] font-bold tracking-[0.4em] text-mag">

@@ -6,6 +6,7 @@
 import { useMemo } from "react";
 import { create } from "zustand";
 import { getTransport } from "@/realtime/transport";
+import { fireSlideAction } from "@/engine/advance";
 import { newEventId, type ShowEvent, type ShowEventInput, type SurveyRow } from "@/realtime/types";
 
 export interface Reaction {
@@ -107,6 +108,13 @@ export const useShow = create<ShowState>((set, get) => {
     switch (ev.type) {
       case "cue":
         set({ index: ev.index, dir: ev.dir });
+        break;
+      case "advance":
+        /* EVERY client mirrors slide-level interactions (award reveals,
+           lyric word-steps, game reveals) by running the action against
+           its own slide instance. The stage additionally handles the
+           cue fallback in its transport subscription. */
+        fireSlideAction(ev.id);
         break;
       case "toggle":
         set({ [ev.key]: ev.on } as Partial<ShowState>);
@@ -294,7 +302,7 @@ export const useShow = create<ShowState>((set, get) => {
     activeCam: null,
     lyric: null,
     scores: persisted.scores ?? { sec1: 0, sec2: 0, sec3: 0, sec4: 0 },
-    bgm: { playing: false, track: "Flashlight (Instrumental)", artist: "Jessie J", volume: 0.35 },
+    bgm: { playing: false, track: "September", artist: "Earth, Wind & Fire", volume: 0.35 },
     votes: {},
     reactionCounts: {},
     reactions: [],

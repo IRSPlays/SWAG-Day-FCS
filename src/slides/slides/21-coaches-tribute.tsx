@@ -1,9 +1,9 @@
 "use client";
 
 /* 21 · COACHES & TEACHERS TRIBUTE — The Emotional Peak.
-   High-fashion stadium concert editorial tribute with 110px Instrument Serif italic poetry.
-   Automatically starts playing "September" (Earth, Wind & Fire) and auto-transitions
-   to the End Credits slide after 20 seconds. */
+    High-fashion stadium concert editorial tribute with 110px Instrument Serif italic poetry.
+    Automatically starts playing "September" (Earth, Wind & Fire) and auto-transitions
+    to the End Credits slide after 10 seconds. */
 
 import { useEffect } from "react";
 import { motion } from "motion/react";
@@ -15,11 +15,11 @@ import type { SlideMeta } from "../types";
 
 export const meta: SlideMeta = {
   id: "coaches-tribute",
-  title: "21 · Coaches & Teachers Tribute",
+  title: "19 · Coaches & Teachers Tribute",
   transition: "slow-fade-black",
-  durationHint: 20,
+  durationHint: 10,
   notes:
-    "EMOTIONAL PEAK — 'September' starts playing automatically. Auto-transitions to End Credits after 20 seconds.",
+    "EMOTIONAL PEAK — 'September' starts playing automatically. Holds for 10 seconds, then auto-transitions to End Credits.",
   accent: "vio",
 };
 
@@ -35,17 +35,17 @@ export default function CoachesTribute() {
   const c = useSlideContent(meta.id, content);
   const dispatch = useShow((s) => s.dispatch);
 
-  /* auto transition to Slide 18 (End Credits) after 20 seconds */
+  /* auto transition to End Credits after 10 seconds */
   useEffect(() => {
     const timer = setTimeout(() => {
       const curIndex = useShow.getState().index;
       dispatch({ type: "cue", index: curIndex + 1, dir: 1 });
-    }, 20000);
+    }, 10000);
     return () => clearTimeout(timer);
   }, [dispatch]);
 
   return (
-    <SlideShell className="bg-[#040209]">
+    <SlideShell>
       <CourtLines />
 
       {/* giant background watermark lettering */}
@@ -105,12 +105,12 @@ export default function CoachesTribute() {
         autoPlay={true}
       />
 
-      {/* 20-second subtle auto-advance indicator line across bottom */}
+      {/* 10-second subtle auto-advance indicator line across bottom */}
       <div className="absolute inset-x-0 bottom-0 z-30 h-1 bg-white/10">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: "100%" }}
-          transition={{ duration: 20, ease: "linear" }}
+          transition={{ duration: 10, ease: "linear" }}
           className="h-full bg-volt"
         />
       </div>

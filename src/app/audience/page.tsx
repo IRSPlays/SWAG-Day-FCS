@@ -49,7 +49,7 @@ export default function AudiencePage() {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col gap-5 bg-court px-5 py-6 text-ice">
+    <main className="page-light mx-auto flex min-h-screen max-w-md flex-col gap-5 bg-court px-5 py-6 text-ice">
       <header>
         <div className="font-body text-[11px] font-bold tracking-[0.4em] text-mag">SWAG DAY '26</div>
         <h1 className="mt-1 font-display text-4xl uppercase leading-none">

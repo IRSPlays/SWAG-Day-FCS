@@ -26,10 +26,10 @@ export const content = {
   titleBottom: "BLOCK A",
   serif: "The stage is theirs.",
   lineup: [
-    { n: "01", song: "PULANG", artist: "INSOMNIACKS", accent: "#8f6bff", tag: "BAND" },
-    { n: "02", song: "DITTO", artist: "NEWJEANS", accent: "#ff3da6", tag: "DANCE" },
-    { n: "03", song: "EVERLONG", artist: "FOO FIGHTERS", accent: "#23dcff", tag: "ROCK" },
-    { n: "04", song: "FLASHLIGHT", artist: "JESSIE J", accent: "#ffd23f", tag: "SOLO" },
+    { n: "01", song: "PULANG", artist: "INSOMNIACKS", accent: "#e1811f", tag: "BAND" },
+    { n: "02", song: "DITTO", artist: "NEWJEANS", accent: "#ea3a3a", tag: "DANCE" },
+    { n: "03", song: "EVERLONG", artist: "FOO FIGHTERS", accent: "#4758d6", tag: "ROCK" },
+    { n: "04", song: "FLASHLIGHT", artist: "JESSIE J", accent: "#eeeded", tag: "SOLO" },
   ],
   ticker: [
     "TALENT BLOCK A",
@@ -44,7 +44,7 @@ export default function TalentBlockA() {
   const c = useSlideContent(meta.id, content);
 
   return (
-    <SlideShell className="bg-[#04020b]">
+    <SlideShell>
       {/* top header band — full-width title bar, nothing on the sides */}
       <div className="absolute inset-x-0 top-0 z-30 border-b-2 border-ice/10 bg-court/85 px-16 py-6 backdrop-blur-md">
         <div className="flex items-end justify-between">
