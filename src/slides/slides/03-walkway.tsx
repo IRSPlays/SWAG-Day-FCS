@@ -2,7 +2,9 @@
 
 /* 03 · THE WALKWAY: SPORTS EDITION — runway beat, teachers walk the aisle.
    Full-bleed centre runway with vanishing-point lane lines and a bottom
-   look-strip. No side columns — reads as a stage floor, not a dashboard. */
+   look-strip. No side columns — reads as a stage floor, not a dashboard.
+   Script: "Play 'Count on Me' audio when Teachers Walk in" — the track
+   auto-plays when this slide cues (stage must be ARMed). */
 
 import { motion } from "motion/react";
 import SlideShell, { LiveBug, TickerBand } from "@/layouts/SlideShell";
@@ -16,7 +18,7 @@ export const meta: SlideMeta = {
   transition: "track-sweep",
   durationHint: 600,
   notes:
-    "Runway of Champions! High-fashion beat up. Teachers walk the aisle front to back. MCs run the 'what sport is this?' crowd game between walks — keep this slide up the whole segment.",
+    "Runway of Champions! 'Count on Me' plays automatically as the teachers walk the aisle front to back. Keep this slide up the whole segment.",
   accent: "mag",
 };
 
@@ -41,6 +43,8 @@ export default function Walkway() {
 
   return (
     <SlideShell>
+      {/* walk-in track — "Count on Me" (Bruno Mars), per the emcee script */}
+      <audio src="/audio/count-on-me.flac" autoPlay loop preload="auto" className="hidden" />
       {/* ---------- vanishing-point runway floor (full bleed) ---------- */}
       <div
         className="pointer-events-none absolute inset-x-0 bottom-[104px] top-[90px] z-0 overflow-hidden"
